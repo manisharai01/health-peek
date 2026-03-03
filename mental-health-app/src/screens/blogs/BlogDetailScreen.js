@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     alignSelf: 'center',
     marginTop: SPACING.xl,
-    ...SHADOWS.small,
+    ...SHADOWS.glow,
   },
   openBtnText: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: '#FFFFFF' },
 });

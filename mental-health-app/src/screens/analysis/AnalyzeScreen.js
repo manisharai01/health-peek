@@ -9,12 +9,14 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { analysisService } from '../../services';
 import { useAnalysis } from '../../context/AnalysisContext';
 import { AnalysisResultCard } from '../../components/AnalysisComponents';
 import { LoadingOverlay, ErrorBanner } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
 
 export default function AnalyzeScreen({ navigation }) {
   const { addAnalysis } = useAnalysis();
@@ -77,6 +79,26 @@ export default function AnalyzeScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Header Banner */}
+        <LinearGradient
+          colors={GRADIENTS.primary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerBanner}
+        >
+          <View style={styles.headerLogoRow}>
+            <View style={styles.headerLogoCircle}>
+              <Image
+                source={require('../../assets/logo.png')}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.headerTitle}>Health Peek</Text>
+          </View>
+          <Text style={styles.headerSubtitle}>Analyze sentiment & emotions from text</Text>
+        </LinearGradient>
+
         <ErrorBanner message={error} onDismiss={() => setError(null)} />
 
         {/* Input Section */}
@@ -109,13 +131,20 @@ export default function AnalyzeScreen({ navigation }) {
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                style={[styles.analyzeBtn, !message.trim() && styles.analyzeBtnDisabled]}
                 onPress={handleAnalyze}
                 disabled={!message.trim() || loading}
+                activeOpacity={0.8}
               >
-                <Text style={styles.analyzeBtnText}>
-                  {loading ? 'Analyzing...' : '🔍 Analyze'}
-                </Text>
+                <LinearGradient
+                  colors={GRADIENTS.primaryButton}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[styles.analyzeBtn, (!message.trim() || loading) && styles.analyzeBtnDisabled]}
+                >
+                  <Text style={styles.analyzeBtnText}>
+                    {loading ? 'Analyzing...' : '🔍 Analyze'}
+                  </Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -159,9 +188,44 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { flex: 1 },
   scrollContent: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
+  headerBanner: {
+    borderRadius: RADIUS.xl,
+    padding: SPACING.xl,
+    marginBottom: SPACING.lg,
+    alignItems: 'center',
+  },
+  headerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  headerLogoCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  headerLogo: {
+    width: 28,
+    height: 28,
+  },
+  headerTitle: {
+    ...FONTS.bold,
+    fontSize: 22,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    ...FONTS.regular,
+    fontSize: FONTS.sizes.sm,
+    color: 'rgba(255,255,255,0.8)',
+  },
   inputCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     ...SHADOWS.medium,
   },
@@ -183,8 +247,8 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     fontSize: FONTS.sizes.lg,
     color: COLORS.text,
-    minHeight: 120,
-    borderWidth: 1,
+    minHeight: 130,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
     lineHeight: 24,
   },
@@ -207,7 +271,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
   },
   clearBtnText: {
@@ -216,17 +280,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   analyzeBtn: {
-    backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,
-    ...SHADOWS.small,
+    ...SHADOWS.glow,
   },
   analyzeBtnDisabled: { opacity: 0.5 },
   analyzeBtnText: {
-    ...FONTS.semiBold,
+    ...FONTS.bold,
     fontSize: FONTS.sizes.md,
-    color: COLORS.textOnPrimary,
+    color: '#FFFFFF',
   },
   quickActions: {
     flexDirection: 'row',
@@ -239,12 +302,14 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     alignItems: 'center',
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
+    borderTopWidth: 3,
+    borderTopColor: COLORS.primary + '30',
   },
-  quickIcon: { fontSize: 24, marginBottom: SPACING.xs },
+  quickIcon: { fontSize: 26, marginBottom: SPACING.sm },
   quickLabel: {
-    ...FONTS.medium,
+    ...FONTS.semiBold,
     fontSize: FONTS.sizes.sm,
-    color: COLORS.textSecondary,
+    color: COLORS.text,
   },
 });

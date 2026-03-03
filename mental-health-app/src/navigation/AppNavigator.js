@@ -1,8 +1,20 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, StyleSheet, Platform, Image } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { COLORS, FONTS } from '../theme';
+import LinearGradient from 'react-native-linear-gradient';
+import { COLORS, FONTS, SHADOWS, GRADIENTS } from '../theme';
+
+const LogoTitle = ({ title }) => (
+  <View style={styles.headerLogoRow}>
+    <Image
+      source={require('../assets/logo.png')}
+      style={styles.headerLogoImg}
+      resizeMode="contain"
+    />
+    <Text style={styles.headerLogoText}>{title}</Text>
+  </View>
+);
 
 // Screens
 import AnalyzeScreen from '../screens/analysis/AnalyzeScreen';
@@ -21,17 +33,25 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const screenOptions = {
-  headerStyle: { backgroundColor: COLORS.surface },
-  headerTintColor: COLORS.text,
-  headerTitleStyle: { ...FONTS.bold, fontSize: 18 },
+  headerStyle: {
+    backgroundColor: COLORS.surface,
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 0,
+  },
+  headerTintColor: COLORS.primary,
+  headerTitleStyle: { ...FONTS.bold, fontSize: 18, color: COLORS.text },
   headerShadowVisible: false,
+  headerBackTitleVisible: false,
+  contentStyle: { backgroundColor: COLORS.background },
+  animation: 'slide_from_right',
 };
 
 // -- Analyze Stack --
 function AnalyzeStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="AnalyzeMain" component={AnalyzeScreen} options={{ title: 'Analyze' }} />
+      <Stack.Screen name="AnalyzeMain" component={AnalyzeScreen} options={{ headerTitle: () => <LogoTitle title="Analyze" /> }} />
       <Stack.Screen name="ChatImport" component={ChatImportScreen} options={{ title: 'Import Chat' }} />
       <Stack.Screen name="AnalysisHistory" component={AnalysisHistoryScreen} options={{ title: 'Analysis History' }} />
       <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} options={{ title: 'Chat Imports' }} />
@@ -44,7 +64,7 @@ function AnalyzeStack() {
 function DashboardStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ title: 'Dashboard' }} />
+      <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerTitle: () => <LogoTitle title="Dashboard" /> }} />
       <Stack.Screen name="Suggestions" component={SuggestionsScreen} options={{ title: 'Suggestions' }} />
     </Stack.Navigator>
   );
@@ -54,7 +74,7 @@ function DashboardStack() {
 function BlogStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="BlogList" component={BlogListScreen} options={{ title: 'Articles' }} />
+      <Stack.Screen name="BlogList" component={BlogListScreen} options={{ headerTitle: () => <LogoTitle title="Articles" /> }} />
       <Stack.Screen name="BlogDetail" component={BlogDetailScreen} options={{ title: 'Article' }} />
     </Stack.Navigator>
   );
@@ -64,7 +84,7 @@ function BlogStack() {
 function MoreStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: () => <LogoTitle title="Profile" /> }} />
       <Stack.Screen name="Export" component={ExportScreen} options={{ title: 'Export & Reports' }} />
       <Stack.Screen name="AnalysisHistory" component={AnalysisHistoryScreen} options={{ title: 'Analysis History' }} />
       <Stack.Screen name="ChatHistory" component={ChatHistoryScreen} options={{ title: 'Chat Imports' }} />
@@ -73,11 +93,30 @@ function MoreStack() {
   );
 }
 
-// Simple emoji-based tab icon
-function _TabIcon({ icon, focused }) {
+const TAB_ICONS = {
+  Analyze: { icon: '🔍', label: 'Analyze' },
+  Dashboard: { icon: '📊', label: 'Dashboard' },
+  Blogs: { icon: '📚', label: 'Articles' },
+  More: { icon: '⚙️', label: 'More' },
+};
+
+function TabIcon({ routeName, focused }) {
+  const iconData = TAB_ICONS[routeName] || { icon: '•' };
   return (
-    <View style={{ opacity: focused ? 1 : 0.5 }}>
-      <Text style={{ fontSize: 22 }}>{icon}</Text>
+    <View style={styles.tabIconContainer}>
+      {focused && (
+        <LinearGradient
+          colors={GRADIENTS.primary}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.activeIndicator}
+        />
+      )}
+      <View style={focused ? styles.tabIconBgActive : styles.tabIconBg}>
+        <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>
+          {iconData.icon}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -86,51 +125,84 @@ function _TabIcon({ icon, focused }) {
 export default function AppNavigator() {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textLight,
         tabBarStyle: {
           backgroundColor: COLORS.surface,
-          borderTopColor: COLORS.divider,
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 4,
+          borderTopWidth: 0,
+          height: Platform.OS === 'ios' ? 88 : 72,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 8,
+          ...SHADOWS.medium,
         },
         tabBarLabelStyle: {
           ...FONTS.semiBold,
           fontSize: 11,
+          marginTop: 2,
         },
-      }}
+        tabBarIcon: ({ focused }) => <TabIcon routeName={route.name} focused={focused} />,
+      })}
     >
-      <Tab.Screen
-        name="Analyze"
-        component={AnalyzeStack}
-        options={{
-          tabBarIcon: ({ focused }) => <_TabIcon icon="🔍" focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Dashboard"
-        component={DashboardStack}
-        options={{
-          tabBarIcon: ({ focused }) => <_TabIcon icon="📊" focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="Blogs"
-        component={BlogStack}
-        options={{
-          tabBarIcon: ({ focused }) => <_TabIcon icon="📚" focused={focused} />,
-        }}
-      />
-      <Tab.Screen
-        name="More"
-        component={MoreStack}
-        options={{
-          tabBarIcon: ({ focused }) => <_TabIcon icon="⚙️" focused={focused} />,
-        }}
-      />
+      <Tab.Screen name="Analyze" component={AnalyzeStack} />
+      <Tab.Screen name="Dashboard" component={DashboardStack} />
+      <Tab.Screen name="Blogs" component={BlogStack} options={{ tabBarLabel: 'Articles' }} />
+      <Tab.Screen name="More" component={MoreStack} />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  headerLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerLogoImg: {
+    width: 28,
+    height: 28,
+    marginRight: 8,
+    borderRadius: 14,
+  },
+  headerLogoText: {
+    ...FONTS.bold,
+    fontSize: 18,
+    color: COLORS.text,
+  },
+  tabIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 52,
+    height: 34,
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: -8,
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+  },
+  tabIconBg: {
+    width: 36,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tabIconBgActive: {
+    width: 36,
+    height: 28,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.primary + '12',
+  },
+  tabIcon: {
+    fontSize: 20,
+    opacity: 0.45,
+  },
+  tabIconActive: {
+    opacity: 1,
+    transform: [{ scale: 1.15 }],
+  },
+});

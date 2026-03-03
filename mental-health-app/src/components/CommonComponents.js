@@ -147,9 +147,9 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xxxl * 2,
     paddingHorizontal: SPACING.xxl,
   },
-  emptyIcon: { fontSize: 48, marginBottom: SPACING.lg },
-  emptyTitle: { ...FONTS.bold, fontSize: FONTS.sizes.xl, color: COLORS.text, marginBottom: SPACING.sm },
-  emptyMessage: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emptyIcon: { fontSize: 56, marginBottom: SPACING.lg },
+  emptyTitle: { ...FONTS.bold, fontSize: FONTS.sizes.xl, color: COLORS.text, marginBottom: SPACING.sm, textAlign: 'center' },
+  emptyMessage: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 22, maxWidth: 260 },
   emptyAction: {
     marginTop: SPACING.xl,
     backgroundColor: COLORS.primary,

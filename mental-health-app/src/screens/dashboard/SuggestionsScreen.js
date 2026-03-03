@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
     borderLeftWidth: 4,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.sm },
   categoryIcon: { fontSize: 28, marginRight: SPACING.md },

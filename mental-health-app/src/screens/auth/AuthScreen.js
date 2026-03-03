@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,16 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
+  StatusBar,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+
+const { width, height } = Dimensions.get('window');
 
 export default function AuthScreen() {
   const { login, register } = useAuth();
@@ -21,6 +28,15 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -54,162 +70,317 @@ export default function AuthScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.darkBg} />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Branding */}
-        <View style={styles.brandingSection}>
-          <Text style={styles.appIcon}>🧠</Text>
-          <Text style={styles.appName}>Health Peek</Text>
-          <Text style={styles.tagline}>
-            AI-Powered Mental Health{'\n'}Chat Analyzer
-          </Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          bounces={false}
+        >
+          {/* Dark Branding Panel */}
+          <LinearGradient
+            colors={[COLORS.darkBg, '#1a1f3a', COLORS.darkCard]}
+            style={styles.brandingPanel}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            {/* Decorative orbs */}
+            <View style={[styles.orb, styles.orbPurple]} />
+            <View style={[styles.orb, styles.orbCyan]} />
+            <View style={[styles.orb, styles.orbGreen]} />
 
-        {/* Auth Form */}
-        <View style={styles.formCard}>
-          {/* Tab Switcher */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, isLogin && styles.activeTab]}
-              onPress={() => setIsLogin(true)}
-            >
-              <Text style={[styles.tabText, isLogin && styles.activeTabText]}>
-                Sign In
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, !isLogin && styles.activeTab]}
-              onPress={() => setIsLogin(false)}
-            >
-              <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>
-                Sign Up
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Name Field (Register Only) */}
-          {!isLogin && (
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your name"
-                placeholderTextColor={COLORS.textLight}
-                autoCapitalize="words"
+            <View style={styles.logoContainer}>
+              <View style={styles.logoGlow} />
+              <Image
+                source={require('../../assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
               />
             </View>
-          )}
-
-          {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={COLORS.textLight}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* Password */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Min 6 characters"
-              placeholderTextColor={COLORS.textLight}
-              secureTextEntry
-            />
-          </View>
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            {loading ? (
-              <ActivityIndicator color={COLORS.textOnPrimary} />
-            ) : (
-              <Text style={styles.submitButtonText}>
-                {isLogin ? 'Sign In' : 'Create Account'}
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Switch Prompt */}
-          <TouchableOpacity
-            style={styles.switchPrompt}
-            onPress={() => setIsLogin(!isLogin)}
-          >
-            <Text style={styles.switchText}>
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              <Text style={styles.switchLink}>
-                {isLogin ? 'Sign Up' : 'Sign In'}
-              </Text>
+            <Text style={styles.appName}>Health Peek</Text>
+            <Text style={styles.tagline}>
+              AI-Powered Mental Health{"\n"}Chat Analyzer
             </Text>
-          </TouchableOpacity>
-        </View>
 
-        <Text style={styles.privacyNote}>
-          🔒 Your data is processed locally and securely
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {/* Feature highlights */}
+            <Animated.View style={[styles.features, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+              <View style={styles.featureRow}>
+                <LinearGradient
+                  colors={['#8B5CF6', '#A78BFA']}
+                  style={styles.featureDot}
+                />
+                <Text style={styles.featureText}>Sentiment & Emotion Analysis</Text>
+              </View>
+              <View style={styles.featureRow}>
+                <LinearGradient
+                  colors={['#06B6D4', '#22D3EE']}
+                  style={styles.featureDot}
+                />
+                <Text style={styles.featureText}>Mental Wellbeing Tracking</Text>
+              </View>
+              <View style={styles.featureRow}>
+                <LinearGradient
+                  colors={['#10B981', '#34D399']}
+                  style={styles.featureDot}
+                />
+                <Text style={styles.featureText}>Personalized Recommendations</Text>
+              </View>
+            </Animated.View>
+          </LinearGradient>
+
+          {/* White Form Panel */}
+          <View style={styles.formPanel}>
+            <Text style={styles.welcomeTitle}>
+              {isLogin ? 'Welcome Back' : 'Create Account'}
+            </Text>
+            <Text style={styles.welcomeSubtitle}>
+              {isLogin
+                ? 'Sign in to continue your wellness journey'
+                : 'Start your mental wellness journey today'}
+            </Text>
+
+            {/* Tab Switcher */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, isLogin && styles.activeTab]}
+                onPress={() => setIsLogin(true)}
+              >
+                <Text style={[styles.tabText, isLogin && styles.activeTabText]}>
+                  Sign In
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, !isLogin && styles.activeTab]}
+                onPress={() => setIsLogin(false)}
+              >
+                <Text style={[styles.tabText, !isLogin && styles.activeTabText]}>
+                  Sign Up
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Name Field (Register Only) */}
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <View style={styles.inputWrapper}>
+                  <Text style={styles.inputIcon}>👤</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Enter your name"
+                    placeholderTextColor={COLORS.textLight}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+            )}
+
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>✉️</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={COLORS.textLight}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Text style={styles.inputIcon}>🔒</Text>
+                <TextInput
+                  style={styles.input}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Min 6 characters"
+                  placeholderTextColor={COLORS.textLight}
+                  secureTextEntry
+                />
+              </View>
+            </View>
+
+            {/* Submit Button */}
+            <TouchableOpacity
+              onPress={handleSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
+              style={{ marginTop: SPACING.sm }}
+            >
+              <LinearGradient
+                colors={GRADIENTS.primaryButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.submitButton}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.submitButtonText}>
+                    {isLogin ? 'Sign In' : 'Create Account'}
+                  </Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Switch Prompt */}
+            <TouchableOpacity
+              style={styles.switchPrompt}
+              onPress={() => setIsLogin(!isLogin)}
+            >
+              <Text style={styles.switchText}>
+                {isLogin ? "Don't have an account? " : 'Already have an account? '}
+                <Text style={styles.switchLink}>
+                  {isLogin ? 'Sign Up' : 'Sign In'}
+                </Text>
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.privacyNote}>
+              🔒 Your data is processed locally and securely
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.darkBg,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.xxxl,
   },
-  brandingSection: {
+  brandingPanel: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 40,
+    paddingHorizontal: SPACING.xxl,
     alignItems: 'center',
-    marginBottom: SPACING.xxxl,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  appIcon: {
-    fontSize: 56,
-    marginBottom: SPACING.sm,
+  orb: {
+    position: 'absolute',
+    borderRadius: 999,
+    opacity: 0.15,
+  },
+  orbPurple: {
+    width: 200,
+    height: 200,
+    backgroundColor: COLORS.primary,
+    top: -40,
+    right: -60,
+  },
+  orbCyan: {
+    width: 150,
+    height: 150,
+    backgroundColor: COLORS.secondary,
+    bottom: 20,
+    left: -40,
+  },
+  orbGreen: {
+    width: 100,
+    height: 100,
+    backgroundColor: COLORS.accent,
+    top: 60,
+    left: 30,
+  },
+  logoContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    borderWidth: 2,
+    borderColor: 'rgba(139, 92, 246, 0.25)',
+  },
+  logoGlow: {
+    position: 'absolute',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+  },
+  logo: {
+    width: 56,
+    height: 56,
   },
   appName: {
-    fontSize: FONTS.sizes.display,
+    fontSize: 32,
     ...FONTS.bold,
-    color: COLORS.textOnPrimary,
+    color: '#FFFFFF',
     marginBottom: SPACING.xs,
+    letterSpacing: 1,
   },
   tagline: {
-    fontSize: FONTS.sizes.lg,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: FONTS.sizes.md,
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 22,
+    marginBottom: SPACING.xxl,
+    letterSpacing: 0.3,
   },
-  formCard: {
+  features: {
+    alignSelf: 'stretch',
+    gap: SPACING.sm,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  featureDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  featureText: {
+    color: 'rgba(255,255,255,0.75)',
+    fontSize: FONTS.sizes.sm,
+    ...FONTS.medium,
+    letterSpacing: 0.2,
+  },
+  formPanel: {
+    flex: 1,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.xxl,
-    ...SHADOWS.large,
+    borderTopLeftRadius: RADIUS.xxl,
+    borderTopRightRadius: RADIUS.xxl,
+    paddingHorizontal: SPACING.xxl,
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xxxl,
+    marginTop: -SPACING.md,
+  },
+  welcomeTitle: {
+    fontSize: FONTS.sizes.xxl,
+    ...FONTS.bold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  welcomeSubtitle: {
+    fontSize: FONTS.sizes.md,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xl,
+    lineHeight: 20,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -226,6 +397,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: COLORS.primary,
+    ...SHADOWS.glow,
   },
   tabText: {
     ...FONTS.semiBold,
@@ -246,34 +418,39 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
-    paddingHorizontal: SPACING.lg,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  inputIcon: {
+    fontSize: 16,
+    paddingLeft: SPACING.lg,
+  },
+  input: {
+    flex: 1,
+    paddingHorizontal: SPACING.md,
     paddingVertical: Platform.OS === 'ios' ? SPACING.lg : SPACING.md,
     fontSize: FONTS.sizes.lg,
     color: COLORS.text,
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
   submitButton: {
-    backgroundColor: COLORS.primary,
     borderRadius: RADIUS.md,
     paddingVertical: SPACING.lg,
     alignItems: 'center',
-    marginTop: SPACING.sm,
-    ...SHADOWS.small,
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
+    ...SHADOWS.glow,
   },
   submitButtonText: {
-    ...FONTS.semiBold,
+    ...FONTS.bold,
     fontSize: FONTS.sizes.lg,
-    color: COLORS.textOnPrimary,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   switchPrompt: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xl,
     alignItems: 'center',
   },
   switchText: {
@@ -282,11 +459,11 @@ const styles = StyleSheet.create({
   },
   switchLink: {
     color: COLORS.primary,
-    ...FONTS.semiBold,
+    ...FONTS.bold,
   },
   privacyNote: {
     textAlign: 'center',
-    color: 'rgba(255,255,255,0.6)',
+    color: COLORS.textLight,
     fontSize: FONTS.sizes.sm,
     marginTop: SPACING.xl,
   },

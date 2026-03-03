@@ -154,10 +154,12 @@ const styles = StyleSheet.create({
   riskText: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm },
   resultCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     marginTop: SPACING.lg,
     ...SHADOWS.medium,
+    borderTopWidth: 3,
+    borderTopColor: COLORS.primary,
   },
   resultTitle: { ...FONTS.bold, fontSize: FONTS.sizes.xl, color: COLORS.text, marginBottom: SPACING.md },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

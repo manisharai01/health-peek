@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { dashboardService } from '../../services';
 import { TimeRangeSelector } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import LinearGradient from 'react-native-linear-gradient';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
 
 const REPORT_TYPES = [
   {
@@ -94,15 +95,22 @@ export default function ExportScreen() {
             </View>
           </View>
           <TouchableOpacity
-            style={styles.downloadBtn}
             onPress={() => handleDownloadReport(report)}
             disabled={downloading === report.key}
+            activeOpacity={0.8}
           >
-            {downloading === report.key ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text style={styles.downloadBtnText}>Download PDF</Text>
-            )}
+            <LinearGradient
+              colors={GRADIENTS.primaryButton}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.downloadBtn}
+            >
+              {downloading === report.key ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text style={styles.downloadBtnText}>Download PDF</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       ))}
@@ -145,17 +153,17 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   cardBody: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.md },
   cardIcon: { fontSize: 28, marginRight: SPACING.md },
   cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: 4 },
   cardDesc: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, lineHeight: 20 },
   downloadBtn: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,
     alignItems: 'center',
+    ...SHADOWS.glow,
   },
   downloadBtnText: { ...FONTS.bold, fontSize: FONTS.sizes.md, color: '#FFFFFF' },
   exportRow: { flexDirection: 'row', gap: SPACING.md },
@@ -165,7 +173,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     alignItems: 'center',
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   exportIcon: { fontSize: 36, marginBottom: SPACING.sm },
   exportLabel: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text },

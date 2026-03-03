@@ -9,9 +9,10 @@ import {
   Alert,
   Image,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, updateUser } = useAuth();
@@ -43,20 +44,27 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      {/* Avatar */}
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          {user?.profile_image ? (
-            <Image source={{ uri: user.profile_image }} style={styles.avatarImage} />
-          ) : (
-            <Text style={styles.avatarText}>
-              {(user?.name || user?.email || '?')[0].toUpperCase()}
-            </Text>
-          )}
+      {/* Gradient Avatar Header */}
+      <LinearGradient
+        colors={GRADIENTS.primary}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        <View style={styles.avatarRing}>
+          <View style={styles.avatar}>
+            {user?.profile_image ? (
+              <Image source={{ uri: user.profile_image }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarText}>
+                {(user?.name || user?.email || '?')[0].toUpperCase()}
+              </Text>
+            )}
+          </View>
         </View>
         <Text style={styles.userName}>{user?.name || 'User'}</Text>
         <Text style={styles.userEmail}>{user?.email || ''}</Text>
-      </View>
+      </LinearGradient>
 
       {/* Profile Card */}
       <View style={styles.card}>
@@ -132,50 +140,70 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  scroll: { padding: SPACING.lg, paddingBottom: 60 },
-  avatarContainer: { alignItems: 'center', marginBottom: SPACING.xl, marginTop: SPACING.md },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: COLORS.primary,
+  scroll: { paddingBottom: 60 },
+  headerGradient: {
+    alignItems: 'center',
+    paddingTop: SPACING.xxxl,
+    paddingBottom: SPACING.xxxl + SPACING.md,
+    borderBottomLeftRadius: RADIUS.xxl + SPACING.sm,
+    borderBottomRightRadius: RADIUS.xxl + SPACING.sm,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.glow,
+    overflow: 'hidden',
+  },
+  avatarRing: {
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: SPACING.md,
-    ...SHADOWS.medium,
   },
-  avatarImage: { width: 90, height: 90, borderRadius: 45 },
-  avatarText: { ...FONTS.bold, fontSize: 36, color: '#FFF' },
-  userName: { ...FONTS.bold, fontSize: 22, color: COLORS.text },
-  userEmail: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.textSecondary },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarImage: { width: 96, height: 96, borderRadius: 48 },
+  avatarText: { ...FONTS.bold, fontSize: 38, color: '#FFF' },
+  userName: { ...FONTS.bold, fontSize: 24, color: '#FFF', letterSpacing: 0.3 },
+  userEmail: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
   card: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
+    marginHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: SPACING.lg },
-  label: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs },
+  label: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   infoText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.text },
   editLink: { ...FONTS.semiBold, fontSize: FONTS.sizes.md, color: COLORS.primary },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
     borderRadius: RADIUS.md,
     padding: SPACING.sm,
     ...FONTS.regular,
     fontSize: FONTS.sizes.md,
     color: COLORS.text,
+    backgroundColor: COLORS.background,
   },
   saveBtn: {
     backgroundColor: COLORS.primary,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.md,
+    ...SHADOWS.small,
   },
   saveBtnText: { ...FONTS.bold, fontSize: FONTS.sizes.sm, color: '#FFF' },
   cancelBtn: {
@@ -194,19 +222,22 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.md + 2,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
-  menuIcon: { fontSize: 20, marginRight: SPACING.md },
+  menuIcon: { fontSize: 22, marginRight: SPACING.md, width: 28, textAlign: 'center' },
   menuText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: COLORS.text, flex: 1 },
-  menuArrow: { ...FONTS.regular, fontSize: 24, color: COLORS.textLight },
+  menuArrow: { ...FONTS.regular, fontSize: 22, color: COLORS.textLight },
   logoutBtn: {
-    backgroundColor: COLORS.error + '10',
-    paddingVertical: SPACING.md,
-    borderRadius: RADIUS.md,
+    backgroundColor: COLORS.error + '08',
+    paddingVertical: SPACING.lg,
+    borderRadius: RADIUS.xl,
     alignItems: 'center',
+    marginHorizontal: SPACING.lg,
     marginTop: SPACING.md,
+    borderWidth: 1.5,
+    borderColor: COLORS.error + '20',
   },
   logoutText: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.error },
   versionText: {
@@ -214,6 +245,7 @@ const styles = StyleSheet.create({
     fontSize: FONTS.sizes.sm,
     color: COLORS.textLight,
     textAlign: 'center',
-    marginTop: SPACING.xl,
+    marginTop: SPACING.xxl,
+    marginBottom: SPACING.lg,
   },
 });

@@ -9,7 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import DocumentPicker from 'react-native-document-picker';
+import { pick, isCancel } from '@react-native-documents/picker';
 import { analysisService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -30,15 +30,14 @@ export default function ChatImportScreen({ navigation }) {
 
   const handleFilePick = async () => {
     try {
-      const res = await DocumentPicker.pick({
-        type: [DocumentPicker.types.plainText, DocumentPicker.types.allFiles],
+      const [file] = await pick({
+        type: ['text/plain', '*/*'],
       });
-      const file = res[0];
       const response = await fetch(file.uri);
       const text = await response.text();
       setContent(text);
     } catch (err) {
-      if (!DocumentPicker.isCancel(err)) {
+      if (!isCancel(err)) {
         Alert.alert('Error', 'Failed to read file');
       }
     }

@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { dashboardService } from '../../services';
 import { TimeRangeSelector, EmptyState, ErrorBanner } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
@@ -81,7 +82,12 @@ export default function DashboardScreen({ navigation }) {
       {stats && (
         <>
           {/* Wellbeing Score */}
-          <View style={styles.wellbeingCard}>
+          <LinearGradient
+            colors={GRADIENTS.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.wellbeingCard}
+          >
             <View style={styles.wellbeingCircle}>
               <Text style={styles.wellbeingScore}>
                 {(stats.wellbeingScore || 0).toFixed(1)}
@@ -90,7 +96,7 @@ export default function DashboardScreen({ navigation }) {
             </View>
             <Text style={styles.wellbeingLabel}>Wellbeing Score</Text>
             <Text style={styles.wellbeingDesc}>{stats.description || ''}</Text>
-          </View>
+          </LinearGradient>
 
           {/* Stats Cards */}
           <View style={styles.statsRow}>
@@ -199,49 +205,51 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
   wellbeingCard: {
-    backgroundColor: COLORS.primary,
     borderRadius: RADIUS.xl,
     padding: SPACING.xxl,
     alignItems: 'center',
     marginBottom: SPACING.lg,
-    ...SHADOWS.large,
+    ...SHADOWS.glow,
+    overflow: 'hidden',
   },
   wellbeingCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
     marginBottom: SPACING.md,
+    borderWidth: 4,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
-  wellbeingScore: { ...FONTS.bold, fontSize: 32, color: COLORS.textOnPrimary },
-  wellbeingMax: { ...FONTS.regular, fontSize: FONTS.sizes.lg, color: 'rgba(255,255,255,0.7)', marginTop: 8 },
-  wellbeingLabel: { ...FONTS.semiBold, fontSize: FONTS.sizes.lg, color: COLORS.textOnPrimary },
-  wellbeingDesc: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginTop: SPACING.xs },
+  wellbeingScore: { ...FONTS.bold, fontSize: 40, color: COLORS.textOnPrimary },
+  wellbeingMax: { ...FONTS.regular, fontSize: FONTS.sizes.lg, color: 'rgba(255,255,255,0.6)', marginTop: 10 },
+  wellbeingLabel: { ...FONTS.bold, fontSize: FONTS.sizes.xl, color: COLORS.textOnPrimary, letterSpacing: 0.5 },
+  wellbeingDesc: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.85)', textAlign: 'center', marginTop: SPACING.xs },
   statsRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.md },
   statCard: {
     flex: 1,
     backgroundColor: COLORS.surface,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.xl,
     padding: SPACING.lg,
     borderLeftWidth: 4,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
-  statCardValue: { ...FONTS.bold, fontSize: FONTS.sizes.xxl, textTransform: 'capitalize' },
-  statCardLabel: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: 2 },
+  statCardValue: { ...FONTS.bold, fontSize: 24, textTransform: 'capitalize' },
+  statCardLabel: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: 4 },
   distributionCard: {
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
     marginBottom: SPACING.md,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: SPACING.md },
   distRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.sm },
   distLabel: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, width: 70, textTransform: 'capitalize' },
-  distBarTrack: { flex: 1, height: 10, backgroundColor: COLORS.border, borderRadius: 5, marginHorizontal: SPACING.sm },
+  distBarTrack: { flex: 1, height: 10, backgroundColor: COLORS.background, borderRadius: 5, marginHorizontal: SPACING.sm },
   distBarFill: { height: 10, borderRadius: 5 },
   distPct: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.text, width: 40, textAlign: 'right' },
   trendsCard: {
@@ -249,13 +257,13 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     padding: SPACING.xl,
     marginBottom: SPACING.md,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   trendSubtitle: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginBottom: SPACING.md },
   trendScroll: { marginBottom: SPACING.md },
   trendBars: { flexDirection: 'row', alignItems: 'flex-end', gap: SPACING.sm, paddingVertical: SPACING.sm },
   trendBarContainer: { alignItems: 'center', width: 40 },
-  trendBar: { width: 24, borderRadius: 4, minHeight: 8 },
+  trendBar: { width: 24, borderRadius: 6, minHeight: 8 },
   trendDate: { ...FONTS.regular, fontSize: 9, color: COLORS.textLight, marginTop: 4 },
   trendLegend: { flexDirection: 'row', justifyContent: 'center', gap: SPACING.lg },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
