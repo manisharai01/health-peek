@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 const DEV_API_URL = Platform.OS === 'android' 
-  ? 'http://10.0.2.2:8000'  // Android emulator localhost
+  ? 'http://10.233.82.174:8000'  // Real Android device via ADB (machine's LAN IP)
   : 'http://localhost:8000'; // iOS simulator
 
 export const CONFIG = {

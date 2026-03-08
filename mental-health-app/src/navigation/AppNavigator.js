@@ -3,6 +3,7 @@ import { Text, View, StyleSheet, Platform, Image } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { COLORS, FONTS, SHADOWS, GRADIENTS } from '../theme';
 
 const LogoTitle = ({ title }) => (
@@ -94,14 +95,15 @@ function MoreStack() {
 }
 
 const TAB_ICONS = {
-  Analyze: { icon: '🔍', label: 'Analyze' },
-  Dashboard: { icon: '📊', label: 'Dashboard' },
-  Blogs: { icon: '📚', label: 'Articles' },
-  More: { icon: '⚙️', label: 'More' },
+  Analyze: 'manage-search',
+  Dashboard: 'insert-chart-outlined',
+  Blogs: 'article',
+  More: 'person-outline',
 };
 
 function TabIcon({ routeName, focused }) {
-  const iconData = TAB_ICONS[routeName] || { icon: '•' };
+  const iconName = TAB_ICONS[routeName] || 'circle';
+  const color = focused ? COLORS.primary : COLORS.textLight;
   return (
     <View style={styles.tabIconContainer}>
       {focused && (
@@ -113,9 +115,7 @@ function TabIcon({ routeName, focused }) {
         />
       )}
       <View style={focused ? styles.tabIconBgActive : styles.tabIconBg}>
-        <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>
-          {iconData.icon}
-        </Text>
+        <MaterialIcons name={iconName} size={22} color={color} />
       </View>
     </View>
   );
@@ -196,13 +196,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.primary + '12',
-  },
-  tabIcon: {
-    fontSize: 20,
-    opacity: 0.45,
-  },
-  tabIconActive: {
-    opacity: 1,
-    transform: [{ scale: 1.15 }],
   },
 });

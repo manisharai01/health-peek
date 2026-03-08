@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -49,7 +50,10 @@ export default function ChatDetailScreen({ route }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Overview */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>📊 Overview</Text>
+        <View style={styles.cardTitleRow}>
+          <MaterialIcons name="bar-chart" size={18} color={COLORS.text} />
+          <Text style={styles.cardTitleText}>Overview</Text>
+        </View>
         <View style={styles.overviewGrid}>
           <StatBox label="Messages" value={analysis.basic_stats?.total_messages || 0} />
           <StatBox label="Participants" value={Object.keys(analysis.participants || {}).length} />
@@ -60,7 +64,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Participants */}
       {analysis.participants && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>👥 Participants</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="people" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Participants</Text>
+          </View>
           {Object.entries(analysis.participants).map(([name, info]) => (
             <View key={name} style={styles.participantRow}>
               <Text style={styles.participantName}>{name}</Text>
@@ -73,7 +80,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Sentiment */}
       {analysis.sentiment_analysis && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>😊 Sentiment Analysis</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="mood" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Sentiment Analysis</Text>
+          </View>
           {Object.entries(analysis.sentiment_analysis.overall_sentiment || {}).map(([key, val]) => (
             <View key={key} style={styles.barRow}>
               <Text style={styles.barLabel}>{key}</Text>
@@ -94,7 +104,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Engagement Metrics */}
       {analysis.engagement_metrics && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📈 Engagement</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="trending-up" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Engagement</Text>
+          </View>
           {analysis.engagement_metrics.avg_response_time && (
             <MetricRow label="Avg Response Time" value={analysis.engagement_metrics.avg_response_time} />
           )}
@@ -107,7 +120,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Messaging Patterns */}
       {analysis.messaging_patterns?.most_active_hour !== undefined && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>🕐 Patterns</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="schedule" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Patterns</Text>
+          </View>
           <MetricRow label="Most Active Hour" value={`${analysis.messaging_patterns.most_active_hour}:00`} />
           {analysis.messaging_patterns.most_active_day && (
             <MetricRow label="Most Active Day" value={analysis.messaging_patterns.most_active_day} />
@@ -118,7 +134,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Red Flags */}
       {analysis.red_flags?.warnings?.length > 0 && (
         <View style={[styles.card, styles.redFlagCard]}>
-          <Text style={[styles.cardTitle, { color: COLORS.error }]}>⚠️ Red Flags</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="warning" size={18} color={COLORS.error} />
+            <Text style={[styles.cardTitleText, { color: COLORS.error }]}>Red Flags</Text>
+          </View>
           {analysis.red_flags.warnings.map((w, i) => (
             <Text key={i} style={styles.warningText}>• {w}</Text>
           ))}
@@ -128,7 +147,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Emoji Stats */}
       {analysis.emoji_stats?.top_emojis?.length > 0 && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>😀 Top Emojis</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="emoji-emotions" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Top Emojis</Text>
+          </View>
           <View style={styles.emojiRow}>
             {analysis.emoji_stats.top_emojis.slice(0, 10).map((e, i) => (
               <View key={i} style={styles.emojiChip}>
@@ -143,7 +165,10 @@ export default function ChatDetailScreen({ route }) {
       {/* Period */}
       {analysis.conversation_period && (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>📅 Conversation Period</Text>
+          <View style={styles.cardTitleRow}>
+            <MaterialIcons name="date-range" size={18} color={COLORS.text} />
+            <Text style={styles.cardTitleText}>Conversation Period</Text>
+          </View>
           <Text style={styles.periodText}>
             {analysis.conversation_period.start_date} → {analysis.conversation_period.end_date}
           </Text>
@@ -190,6 +215,8 @@ const styles = StyleSheet.create({
   },
   redFlagCard: { borderLeftWidth: 3, borderLeftColor: COLORS.error },
   cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: SPACING.md },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING.md },
+  cardTitleText: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginLeft: SPACING.sm },
   overviewGrid: { flexDirection: 'row', gap: SPACING.md },
   statBox: {
     flex: 1,

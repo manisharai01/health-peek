@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { EmptyState, ConfirmDialog } from '../../components/CommonComponents';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
@@ -81,7 +82,7 @@ export default function ChatHistoryScreen({ navigation }) {
           style={styles.deleteBtn}
           onPress={() => setDeleteTarget(item._id || item.analysis_id)}
         >
-          <Text style={styles.deleteBtnText}>🗑️</Text>
+          <MaterialIcons name="delete-outline" size={20} color={COLORS.error} />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -90,7 +91,7 @@ export default function ChatHistoryScreen({ navigation }) {
   if (!loading && history.length === 0) {
     return (
       <EmptyState
-        icon="💬"
+        iconName="chat-bubble-outline"
         title="No Chat Imports"
         message="Import a chat to see analysis here."
         actionLabel="Import Chat"
@@ -153,6 +154,5 @@ const styles = StyleSheet.create({
   statValue: { ...FONTS.bold, fontSize: FONTS.sizes.xl, color: COLORS.text },
   statLabel: { ...FONTS.regular, fontSize: FONTS.sizes.xs, color: COLORS.textSecondary },
   deleteBtn: { position: 'absolute', right: SPACING.md, bottom: SPACING.md, padding: SPACING.xs },
-  deleteBtnText: { fontSize: 16 },
   separator: { height: SPACING.md },
 });

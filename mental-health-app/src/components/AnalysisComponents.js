@@ -1,6 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
+
+const SENTIMENT_ICONS = {
+  positive: 'sentiment-satisfied-alt',
+  negative: 'sentiment-dissatisfied',
+  neutral: 'sentiment-neutral',
+  mixed: 'psychology',
+};
 
 export function SentimentBadge({ sentiment, size = 'md' }) {
   const colorMap = {
@@ -10,17 +18,12 @@ export function SentimentBadge({ sentiment, size = 'md' }) {
     mixed: COLORS.mixed,
   };
   const color = colorMap[sentiment?.toLowerCase()] || COLORS.textSecondary;
-  const emojiMap = {
-    positive: '😊',
-    negative: '😟',
-    neutral: '😐',
-    mixed: '🤔',
-  };
-  const emoji = emojiMap[sentiment?.toLowerCase()] || '❓';
+  const iconName = SENTIMENT_ICONS[sentiment?.toLowerCase()] || 'help-outline';
+  const iconSize = size === 'sm' ? 14 : 18;
 
   return (
     <View style={[styles.badge, { backgroundColor: color + '20', borderColor: color }, size === 'sm' && styles.badgeSm]}>
-      <Text style={[styles.badgeEmoji, size === 'sm' && styles.badgeEmojiSm]}>{emoji}</Text>
+      <MaterialIcons name={iconName} size={iconSize} color={color} style={{ marginRight: 4 }} />
       <Text style={[styles.badgeText, { color }, size === 'sm' && styles.badgeTextSm]}>
         {sentiment || 'Unknown'}
       </Text>
@@ -82,8 +85,9 @@ export function RiskIndicator({ sentiment, confidence }) {
   }
 
   return (
-    <View style={[styles.riskBadge, { backgroundColor: color + '15', borderColor: color }]}>
-      <Text style={[styles.riskText, { color }]}>⚡ Risk: {level}</Text>
+    <View style={[styles.riskBadge, { backgroundColor: color + '15', borderColor: color, flexDirection: 'row', alignItems: 'center' }]}>
+      <MaterialIcons name="shield" size={13} color={color} style={{ marginRight: 4 }} />
+      <Text style={[styles.riskText, { color }]}>Risk: {level}</Text>
     </View>
   );
 }
@@ -125,8 +129,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
   },
-  badgeEmoji: { fontSize: 16, marginRight: SPACING.xs },
-  badgeEmojiSm: { fontSize: 12 },
   badgeText: { ...FONTS.semiBold, fontSize: FONTS.sizes.md, textTransform: 'capitalize' },
   badgeTextSm: { fontSize: FONTS.sizes.sm },
   confContainer: { marginVertical: SPACING.md },

@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Linking,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { dashboardService, blogService } from '../../services';
 import { EmptyState } from '../../components/CommonComponents';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
@@ -50,19 +51,19 @@ export default function SuggestionsScreen({ navigation }) {
     return colors[priority?.toLowerCase()] || COLORS.textSecondary;
   };
 
-  const getCategoryIcon = (category) => {
-    const icons = {
-      mindfulness: '🧘',
-      exercise: '🏃',
-      sleep: '😴',
-      social: '👫',
-      professional: '🩺',
-      nutrition: '🥗',
-      creativity: '🎨',
-      relaxation: '🌿',
-    };
-    return icons[category?.toLowerCase()] || '💡';
+  const CATEGORY_ICONS = {
+    mindfulness: 'self-improvement',
+    exercise: 'directions-run',
+    sleep: 'bedtime',
+    social: 'people',
+    professional: 'local-hospital',
+    nutrition: 'restaurant',
+    creativity: 'palette',
+    relaxation: 'spa',
   };
+
+  const getCategoryIcon = (category) =>
+    CATEGORY_ICONS[category?.toLowerCase()] || 'lightbulb';
 
   const renderItem = ({ item }) => {
     const hasLink = item.blog_id || item.external_url;
@@ -71,12 +72,14 @@ export default function SuggestionsScreen({ navigation }) {
     return (
       <View style={[styles.card, { borderLeftColor: prioColor }]}>
         <View style={styles.cardHeader}>
-          <Text style={styles.categoryIcon}>{getCategoryIcon(item.category)}</Text>
+          <MaterialIcons name={getCategoryIcon(item.category)} size={28} color={COLORS.primary} style={styles.categoryIcon} />
           <View style={styles.cardTitleContainer}>
             <Text style={styles.cardTitle}>{item.title}</Text>
             <View style={[styles.priorityBadge, { backgroundColor: prioColor + '20' }]}>
               <Text style={[styles.priorityText, { color: prioColor }]}>
-                {item.priority === 'critical' ? '⚠️ ' : ''}{item.priority}
+                {item.priority === 'critical' && (
+                  <MaterialIcons name="warning" size={12} color={getPriorityColor('critical')} />
+                )}{item.priority === 'critical' ? ' ' : ''}{item.priority}
               </Text>
             </View>
           </View>
@@ -99,7 +102,7 @@ export default function SuggestionsScreen({ navigation }) {
   if (!loading && suggestions.length === 0) {
     return (
       <EmptyState
-        icon="💡"
+        iconName="lightbulb"
         title="Start Your Journey"
         message="Analyze some messages to receive personalized recommendations based on your emotional patterns."
       />

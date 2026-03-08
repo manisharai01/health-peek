@@ -60,7 +60,7 @@ export default function DashboardScreen({ navigation }) {
       <View style={styles.container}>
         <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
         <EmptyState
-          icon="📊"
+          iconName="bar-chart"
           title="No Data Yet"
           message="Analyze some messages to see your dashboard stats."
         />

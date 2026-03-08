@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { blogService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -64,7 +65,8 @@ export default function BlogDetailScreen({ route }) {
             style={styles.openBtn}
             onPress={() => Linking.openURL(blog.link)}
           >
-            <Text style={styles.openBtnText}>🌐 Open in Browser</Text>
+            <MaterialIcons name="language" size={18} color="#FFFFFF" />
+            <Text style={styles.openBtnText}>Open in Browser</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -121,7 +123,7 @@ export default function BlogDetailScreen({ route }) {
               <View style={styles.tipsContainer}>
                 {section.tips.map((tip, ti) => (
                   <View key={ti} style={styles.tipRow}>
-                    <Text style={styles.tipBullet}>💡</Text>
+                    <MaterialIcons name="lightbulb" size={16} color={COLORS.primary} style={{ marginRight: SPACING.sm }} />
                     <Text style={styles.tipText}>{tip}</Text>
                   </View>
                 ))}
@@ -132,7 +134,10 @@ export default function BlogDetailScreen({ route }) {
 
         {/* Likes */}
         <View style={styles.footer}>
-          <Text style={styles.likes}>❤️ {blog.likes || 0} likes</Text>
+          <View style={styles.likesRow}>
+            <MaterialIcons name="favorite" size={18} color={COLORS.secondary} />
+            <Text style={styles.likes}>{blog.likes || 0} likes</Text>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -199,7 +204,7 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
   tipRow: { flexDirection: 'row', marginBottom: SPACING.sm },
-  tipBullet: { marginRight: SPACING.sm, fontSize: 16 },
+  tipBullet: { marginRight: SPACING.sm },
   tipText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.text, flex: 1, lineHeight: 22 },
   footer: {
     paddingTop: SPACING.lg,
@@ -207,8 +212,12 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.divider,
     alignItems: 'center',
   },
+  likesRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.xs },
   likes: { ...FONTS.semiBold, fontSize: FONTS.sizes.lg, color: COLORS.secondary },
   openBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,

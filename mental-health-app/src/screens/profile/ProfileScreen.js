@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
@@ -112,19 +113,19 @@ export default function ProfileScreen({ navigation }) {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account</Text>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Export')}>
-          <Text style={styles.menuIcon}>📤</Text>
+          <MaterialIcons name="upload-file" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Export & Reports</Text>
-          <Text style={styles.menuArrow}>›</Text>
+          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AnalysisHistory')}>
-          <Text style={styles.menuIcon}>📊</Text>
+          <MaterialIcons name="insert-chart-outlined" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Analysis History</Text>
-          <Text style={styles.menuArrow}>›</Text>
+          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChatHistory')}>
-          <Text style={styles.menuIcon}>💬</Text>
+          <MaterialIcons name="chat-bubble-outline" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Chat Imports</Text>
-          <Text style={styles.menuArrow}>›</Text>
+          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
         </TouchableOpacity>
       </View>
 
@@ -226,9 +227,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
   },
-  menuIcon: { fontSize: 22, marginRight: SPACING.md, width: 28, textAlign: 'center' },
+  menuIconStyle: { marginRight: SPACING.md },
   menuText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: COLORS.text, flex: 1 },
-  menuArrow: { ...FONTS.regular, fontSize: 22, color: COLORS.textLight },
   logoutBtn: {
     backgroundColor: COLORS.error + '08',
     paddingVertical: SPACING.lg,

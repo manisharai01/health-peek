@@ -9,6 +9,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { blogService } from '../../services';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { EmptyState } from '../../components/CommonComponents';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -112,7 +113,8 @@ export default function BlogListScreen({ navigation }) {
                 style={styles.likeBtn}
                 onPress={() => handleLike(item._id)}
               >
-                <Text style={styles.likeBtnText}>❤️ {item.likes || 0}</Text>
+                <MaterialIcons name="favorite" size={12} color={COLORS.error} />
+                <Text style={styles.likeBtnText}>{item.likes || 0}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -132,7 +134,7 @@ export default function BlogListScreen({ navigation }) {
           onPress={() => setActiveTab('blogs')}
         >
           <Text style={[styles.tabText, activeTab === 'blogs' && styles.activeTabText]}>
-            📝 Articles
+            Articles
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -140,14 +142,14 @@ export default function BlogListScreen({ navigation }) {
           onPress={() => setActiveTab('rss')}
         >
           <Text style={[styles.tabText, activeTab === 'rss' && styles.activeTabText]}>
-            📡 RSS Feed
+            RSS Feed
           </Text>
         </TouchableOpacity>
       </View>
 
       {!loading && currentData.length === 0 ? (
         <EmptyState
-          icon="📚"
+          iconName="menu-book"
           title={activeTab === 'blogs' ? 'No Articles Yet' : 'No RSS Articles'}
           message={activeTab === 'blogs' ? 'Check back for mental wellness articles.' : 'RSS feed is currently unavailable.'}
         />
@@ -215,6 +217,7 @@ const styles = StyleSheet.create({
   likeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: SPACING.xs,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,

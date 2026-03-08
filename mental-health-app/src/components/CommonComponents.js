@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Modal,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
 
 export function LoadingOverlay({ visible, message = 'Loading...' }) {
@@ -25,20 +26,23 @@ export function ErrorBanner({ message, onDismiss }) {
   if (!message) return null;
   return (
     <View style={styles.errorBanner}>
-      <Text style={styles.errorText}>⚠️ {message}</Text>
+      <MaterialIcons name="error-outline" size={18} color={COLORS.error} style={{ marginRight: SPACING.sm }} />
+      <Text style={styles.errorText}>{message}</Text>
       {onDismiss && (
-        <TouchableOpacity onPress={onDismiss}>
-          <Text style={styles.errorDismiss}>✕</Text>
+        <TouchableOpacity onPress={onDismiss} style={styles.errorDismissBtn}>
+          <MaterialIcons name="close" size={18} color={COLORS.error} />
         </TouchableOpacity>
       )}
     </View>
   );
 }
 
-export function EmptyState({ icon = '📭', title, message, actionLabel, onAction }) {
+export function EmptyState({ iconName = 'inbox', title, message, actionLabel, onAction }) {
   return (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>{icon}</Text>
+      <View style={styles.emptyIconWrap}>
+        <MaterialIcons name={iconName} size={52} color={COLORS.primary + '60'} />
+      </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyMessage}>{message}</Text>
       {actionLabel && onAction && (
@@ -132,19 +136,26 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: COLORS.error,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
     borderRadius: RADIUS.sm,
   },
   errorText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: COLORS.error, flex: 1 },
-  errorDismiss: { fontSize: 18, color: COLORS.error, marginLeft: SPACING.md },
+  errorDismissBtn: { padding: 2, marginLeft: SPACING.md },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: SPACING.xxxl * 2,
+    paddingHorizontal: SPACING.xxl,
+  },
+  emptyIconWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+ 
     paddingHorizontal: SPACING.xxl,
   },
   emptyIcon: { fontSize: 56, marginBottom: SPACING.lg },

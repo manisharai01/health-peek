@@ -12,6 +12,7 @@ import {
   Image,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { useAnalysis } from '../../context/AnalysisContext';
 import { AnalysisResultCard } from '../../components/AnalysisComponents';
@@ -51,7 +52,7 @@ export default function AnalyzeScreen({ navigation }) {
         data.confidence > 0.7
       ) {
         Alert.alert(
-          '⚠️ High Risk Detected',
+          'High Risk Detected',
           'This message shows signs of significant distress. If you or someone you know needs help, please reach out to a mental health professional or call a crisis helpline.',
           [{ text: 'I Understand', style: 'cancel' }]
         );
@@ -141,8 +142,9 @@ export default function AnalyzeScreen({ navigation }) {
                   end={{ x: 1, y: 0 }}
                   style={[styles.analyzeBtn, (!message.trim() || loading) && styles.analyzeBtnDisabled]}
                 >
+                  <MaterialIcons name="analytics" size={16} color="#FFF" style={{ marginRight: 6 }} />
                   <Text style={styles.analyzeBtnText}>
-                    {loading ? 'Analyzing...' : '🔍 Analyze'}
+                    {loading ? 'Analyzing...' : 'Analyze'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -156,21 +158,21 @@ export default function AnalyzeScreen({ navigation }) {
             style={styles.quickBtn}
             onPress={() => navigation.navigate('ChatImport')}
           >
-            <Text style={styles.quickIcon}>📁</Text>
+            <MaterialIcons name="folder-open" size={24} color={COLORS.primary} style={styles.quickIconStyle} />
             <Text style={styles.quickLabel}>Import Chat</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickBtn}
             onPress={() => navigation.navigate('AnalysisHistory')}
           >
-            <Text style={styles.quickIcon}>📊</Text>
+            <MaterialIcons name="history" size={24} color={COLORS.primary} style={styles.quickIconStyle} />
             <Text style={styles.quickLabel}>History</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.quickBtn}
             onPress={() => navigation.navigate('ChatHistory')}
           >
-            <Text style={styles.quickIcon}>💬</Text>
+            <MaterialIcons name="chat-bubble-outline" size={24} color={COLORS.primary} style={styles.quickIconStyle} />
             <Text style={styles.quickLabel}>Chat History</Text>
           </TouchableOpacity>
         </View>
@@ -283,6 +285,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.md,
     borderRadius: RADIUS.md,
+    flexDirection: 'row',
+    alignItems: 'center',
     ...SHADOWS.glow,
   },
   analyzeBtnDisabled: { opacity: 0.5 },
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 3,
     borderTopColor: COLORS.primary + '30',
   },
-  quickIcon: { fontSize: 26, marginBottom: SPACING.sm },
+  quickIconStyle: { marginBottom: SPACING.sm },
   quickLabel: {
     ...FONTS.semiBold,
     fontSize: FONTS.sizes.sm,

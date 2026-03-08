@@ -16,6 +16,7 @@ import {
   Animated,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../context/AuthContext';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
 
@@ -168,7 +169,7 @@ export default function AuthScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Full Name</Text>
                 <View style={styles.inputWrapper}>
-                  <Text style={styles.inputIcon}>👤</Text>
+                  <MaterialIcons name="person-outline" size={18} color={COLORS.textLight} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     value={name}
@@ -185,7 +186,7 @@ export default function AuthScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <MaterialIcons name="email" size={18} color={COLORS.textLight} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={email}
@@ -203,7 +204,7 @@ export default function AuthScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <MaterialIcons name="lock-outline" size={18} color={COLORS.textLight} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
                   value={password}
@@ -251,9 +252,12 @@ export default function AuthScreen() {
               </Text>
             </TouchableOpacity>
 
-            <Text style={styles.privacyNote}>
-              🔒 Your data is processed locally and securely
-            </Text>
+            <View style={styles.privacyRow}>
+              <MaterialIcons name="security" size={14} color={COLORS.textLight} style={{ marginRight: 6 }} />
+              <Text style={styles.privacyNote}>
+                Your data is processed locally and securely
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -427,8 +431,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   inputIcon: {
-    fontSize: 16,
-    paddingLeft: SPACING.lg,
+    marginLeft: SPACING.lg,
   },
   input: {
     flex: 1,
@@ -461,10 +464,14 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     ...FONTS.bold,
   },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: SPACING.xl,
+  },
   privacyNote: {
-    textAlign: 'center',
     color: COLORS.textLight,
     fontSize: FONTS.sizes.sm,
-    marginTop: SPACING.xl,
   },
 });

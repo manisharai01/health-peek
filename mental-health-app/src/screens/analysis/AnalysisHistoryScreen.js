@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useAnalysis } from '../../context/AnalysisContext';
 import { SentimentBadge, ConfidenceBar } from '../../components/AnalysisComponents';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { EmptyState, ConfirmDialog } from '../../components/CommonComponents';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -47,7 +48,7 @@ export default function AnalysisHistoryScreen() {
             Confidence: {Math.round((item.confidence || 0) * 100)}%
           </Text>
           <TouchableOpacity onPress={() => setDeleteTarget(item.analysis_id)}>
-            <Text style={styles.deleteBtn}>🗑️</Text>
+            <MaterialIcons name="delete-outline" size={22} color={COLORS.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -57,7 +58,7 @@ export default function AnalysisHistoryScreen() {
   if (!isLoading && analysisHistory.length === 0) {
     return (
       <EmptyState
-        icon="📊"
+        iconName="bar-chart"
         title="No Analysis History"
         message="Analyze some messages to see your history here."
       />
@@ -109,6 +110,5 @@ const styles = StyleSheet.create({
   itemMessage: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.text, lineHeight: 20, marginBottom: SPACING.sm },
   itemFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   confText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
-  deleteBtn: { fontSize: 18, padding: SPACING.xs },
   separator: { height: SPACING.md },
 });

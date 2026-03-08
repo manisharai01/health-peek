@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { dashboardService } from '../../services';
 import { TimeRangeSelector } from '../../components/CommonComponents';
 import LinearGradient from 'react-native-linear-gradient';
@@ -18,29 +19,29 @@ const REPORT_TYPES = [
   {
     key: 'personal',
     title: 'Personal Report',
-    icon: '📋',
+    icon: 'assignment',
     desc: 'Comprehensive analysis of your mental health trends, patterns, and detailed insights.',
     endpoint: 'personal',
   },
   {
     key: 'clinical',
     title: 'Clinical Summary',
-    icon: '🏥',
+    icon: 'local-hospital',
     desc: 'Professional-grade summary suitable for sharing with healthcare providers.',
     endpoint: 'clinical',
   },
   {
     key: 'charts',
     title: 'Data Charts',
-    icon: '📊',
+    icon: 'bar-chart',
     desc: 'Visual charts and graphs of your mood trends and sentiment distribution.',
     endpoint: 'charts',
   },
 ];
 
 const EXPORT_FORMATS = [
-  { key: 'csv', label: 'CSV', icon: '📑' },
-  { key: 'json', label: 'JSON', icon: '📦' },
+  { key: 'csv', label: 'CSV', icon: 'table-chart' },
+  { key: 'json', label: 'JSON', icon: 'data-object' },
 ];
 
 export default function ExportScreen() {
@@ -74,7 +75,10 @@ export default function ExportScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      <Text style={styles.heading}>📤 Export & Reports</Text>
+      <View style={styles.headingRow}>
+        <MaterialIcons name="upload-file" size={26} color={COLORS.text} style={{ marginRight: SPACING.sm }} />
+        <Text style={styles.heading}>Export & Reports</Text>
+      </View>
       <Text style={styles.subheading}>Download reports or export your data</Text>
 
       {/* Time Range */}
@@ -84,11 +88,11 @@ export default function ExportScreen() {
       </View>
 
       {/* Reports */}
-      <Text style={styles.sectionTitle}>📥 Download Reports (PDF)</Text>
+      <Text style={styles.sectionTitle}>Download Reports (PDF)</Text>
       {REPORT_TYPES.map((report) => (
         <View key={report.key} style={styles.card}>
           <View style={styles.cardBody}>
-            <Text style={styles.cardIcon}>{report.icon}</Text>
+            <MaterialIcons name={report.icon} size={28} color={COLORS.primary} style={styles.cardIconStyle} />
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{report.title}</Text>
               <Text style={styles.cardDesc}>{report.desc}</Text>
@@ -116,7 +120,7 @@ export default function ExportScreen() {
       ))}
 
       {/* Data Export */}
-      <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>📊 Export Raw Data</Text>
+      <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>Export Raw Data</Text>
       <View style={styles.exportRow}>
         {EXPORT_FORMATS.map((fmt) => (
           <TouchableOpacity
@@ -125,7 +129,7 @@ export default function ExportScreen() {
             onPress={() => handleExport(fmt.key)}
             disabled={exporting === fmt.key}
           >
-            <Text style={styles.exportIcon}>{fmt.icon}</Text>
+            <MaterialIcons name={fmt.icon} size={36} color={COLORS.primary} style={{ marginBottom: SPACING.sm }} />
             {exporting === fmt.key ? (
               <ActivityIndicator color={COLORS.primary} size="small" style={{ marginTop: 8 }} />
             ) : (
@@ -144,7 +148,8 @@ export default function ExportScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: SPACING.lg, paddingBottom: 60 },
-  heading: { ...FONTS.bold, fontSize: 24, color: COLORS.text, marginBottom: 4 },
+  headingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  heading: { ...FONTS.bold, fontSize: 24, color: COLORS.text },
   subheading: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.textSecondary, marginBottom: SPACING.xl },
   rangeSection: { marginBottom: SPACING.xl },
   sectionTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: SPACING.md },
@@ -156,7 +161,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
   },
   cardBody: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING.md },
-  cardIcon: { fontSize: 28, marginRight: SPACING.md },
+  cardIconStyle: { marginRight: SPACING.md },
   cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: 4 },
   cardDesc: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, lineHeight: 20 },
   downloadBtn: {
@@ -175,7 +180,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...SHADOWS.medium,
   },
-  exportIcon: { fontSize: 36, marginBottom: SPACING.sm },
   exportLabel: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text },
   exportHint: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: 4 },
 });

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { pick, isCancel } from '@react-native-documents/picker';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
@@ -21,11 +22,11 @@ export default function ChatImportScreen({ navigation }) {
   const [result, setResult] = useState(null);
 
   const formats = [
-    { key: 'whatsapp', label: 'WhatsApp', icon: '💬' },
-    { key: 'telegram', label: 'Telegram', icon: '✈️' },
-    { key: 'discord', label: 'Discord', icon: '🎮' },
-    { key: 'imessage', label: 'iMessage', icon: '🍎' },
-    { key: 'generic', label: 'Generic', icon: '📝' },
+    { key: 'whatsapp', label: 'WhatsApp', icon: 'chat' },
+    { key: 'telegram', label: 'Telegram', icon: 'send' },
+    { key: 'discord', label: 'Discord', icon: 'sports-esports' },
+    { key: 'imessage', label: 'iMessage', icon: 'sms' },
+    { key: 'generic', label: 'Generic', icon: 'description' },
   ];
 
   const handleFilePick = async () => {
@@ -70,7 +71,7 @@ export default function ChatImportScreen({ navigation }) {
 
     return (
       <View style={styles.resultCard}>
-        <Text style={styles.resultTitle}>📊 Chat Analysis</Text>
+        <Text style={styles.resultTitle}>Chat Analysis</Text>
 
         {/* Basic Stats */}
         <View style={styles.statsGrid}>
@@ -107,7 +108,7 @@ export default function ChatImportScreen({ navigation }) {
         {/* Red Flags */}
         {result.red_flags?.warnings?.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: COLORS.error }]}>⚠️ Red Flags</Text>
+            <Text style={[styles.sectionTitle, { color: COLORS.error }]}>Red Flags</Text>
             {result.red_flags.warnings.map((warning, i) => (
               <Text key={i} style={styles.warningText}>• {warning}</Text>
             ))}
@@ -117,7 +118,7 @@ export default function ChatImportScreen({ navigation }) {
         {/* Conversation Period */}
         {result.conversation_period && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>📅 Period</Text>
+            <Text style={styles.sectionTitle}>Period</Text>
             <Text style={styles.periodText}>
               {result.conversation_period.start_date} → {result.conversation_period.end_date}
             </Text>
@@ -140,7 +141,12 @@ export default function ChatImportScreen({ navigation }) {
                 style={[styles.formatChip, formatType === f.key && styles.formatChipActive]}
                 onPress={() => setFormatType(f.key)}
               >
-                <Text style={styles.formatIcon}>{f.icon}</Text>
+                <MaterialIcons
+                  name={f.icon}
+                  size={16}
+                  color={formatType === f.key ? COLORS.primary : COLORS.textSecondary}
+                  style={{ marginRight: SPACING.xs }}
+                />
                 <Text style={[styles.formatLabel, formatType === f.key && styles.formatLabelActive]}>
                   {f.label}
                 </Text>
@@ -167,7 +173,10 @@ export default function ChatImportScreen({ navigation }) {
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>Chat Content</Text>
           <TouchableOpacity style={styles.fileBtn} onPress={handleFilePick}>
-            <Text style={styles.fileBtnText}>📎 Pick File</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <MaterialIcons name="attach-file" size={14} color={COLORS.primary} />
+              <Text style={styles.fileBtnText}>Pick File</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -194,7 +203,10 @@ export default function ChatImportScreen({ navigation }) {
         {loading ? (
           <ActivityIndicator color={COLORS.textOnPrimary} />
         ) : (
-          <Text style={styles.importBtnText}>🚀 Analyze Chat</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <MaterialIcons name="analytics" size={20} color={COLORS.textOnPrimary} />
+            <Text style={styles.importBtnText}>Analyze Chat</Text>
+          </View>
         )}
       </TouchableOpacity>
 
@@ -233,7 +245,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   formatChipActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
-  formatIcon: { fontSize: 16, marginRight: SPACING.xs },
+  formatIconStyle: { marginRight: SPACING.xs },
   formatLabel: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
   formatLabelActive: { color: COLORS.primary },
   nameInput: {
