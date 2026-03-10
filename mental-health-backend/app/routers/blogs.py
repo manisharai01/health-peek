@@ -77,10 +77,12 @@ async def create_blog(
     description: str = Form(...),
     content: str = Form(""),
     category: str = Form("Mental Health"),
+    sections_json: str = Form("[]"),
     cover_image: Optional[UploadFile] = File(None),
     current_user: dict = Depends(get_current_user),
 ):
     """Create a new blog post (admin only)."""
+    import json as _json
     await _require_admin(current_user)
     db = get_database()
 
@@ -90,11 +92,17 @@ async def create_blog(
         content_type = cover_image.content_type or "image/jpeg"
         cover_image_data = f"data:{content_type};base64,{base64.b64encode(img_bytes).decode()}"
 
+    try:
+        sections = _json.loads(sections_json) if sections_json else []
+    except Exception:
+        sections = []
+
     blog_doc = {
         "title": title,
         "description": description,
         "content": content,
         "category": category,
+        "sections": sections,
         "cover_image": cover_image_data,
         "author_email": current_user["email"],
         "likes": 0,
@@ -114,19 +122,27 @@ async def update_blog(
     description: str = Form(...),
     content: str = Form(""),
     category: str = Form("Mental Health"),
+    sections_json: str = Form("[]"),
     cover_image: Optional[UploadFile] = File(None),
     current_user: dict = Depends(get_current_user),
 ):
     """Update a blog post (admin only)."""
+    import json as _json
     await _require_admin(current_user)
     from bson import ObjectId
     db = get_database()
+
+    try:
+        sections = _json.loads(sections_json) if sections_json else []
+    except Exception:
+        sections = []
 
     update_data = {
         "title": title,
         "description": description,
         "content": content,
         "category": category,
+        "sections": sections,
         "updated_at": datetime.utcnow(),
     }
 
@@ -243,6 +259,7 @@ def _serialize_blog(doc: dict) -> dict:
         "description": doc.get("description", ""),
         "content": doc.get("content", ""),
         "category": doc.get("category", "Mental Health"),
+        "sections": doc.get("sections", []),
         "cover_image": doc.get("cover_image"),
         "author_email": doc.get("author_email", ""),
         "likes": doc.get("likes", 0),

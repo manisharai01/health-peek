@@ -606,6 +606,8 @@ async def migrate_bulk_import_sources(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to migrate bulk imports: {str(e)}"
         )
+
+@router.delete("/chat-history/{chat_id}")
 async def delete_chat_import(
     chat_id: str,
     current_user: dict = Depends(get_current_user)

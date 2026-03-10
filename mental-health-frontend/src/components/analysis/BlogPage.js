@@ -31,26 +31,15 @@ const BlogPage = () => {
         setIsAdmin(false);
       }
 
-      // Load admin blogs
-      const adminRes = await blogService.getAdminBlogs();
-      setAdminBlogs(adminRes.blogs || []);
-
-      // If no admin blogs, load RSS
-      if (!adminRes.blogs || adminRes.blogs.length === 0) {
-        const rssRes = await blogService.getRssArticles();
-        setRssArticles(rssRes.articles || []);
-      } else {
-        setRssArticles([]);
-      }
+      // Load admin blogs and RSS in parallel — always show both
+      const [adminRes, rssRes] = await Promise.allSettled([
+        blogService.getAdminBlogs(),
+        blogService.getRssArticles(),
+      ]);
+      setAdminBlogs(adminRes.status === 'fulfilled' ? (adminRes.value.blogs || []) : []);
+      setRssArticles(rssRes.status === 'fulfilled' ? (rssRes.value.articles || []) : []);
     } catch (err) {
       console.error('Failed to load blog data:', err);
-      // Try RSS as fallback
-      try {
-        const rssRes = await blogService.getRssArticles();
-        setRssArticles(rssRes.articles || []);
-      } catch {
-        setRssArticles([]);
-      }
     } finally {
       setLoading(false);
     }
@@ -119,8 +108,11 @@ const BlogPage = () => {
     );
   }
 
-  const hasAdminBlogs = adminBlogs.length > 0;
-  const displayArticles = hasAdminBlogs ? adminBlogs : rssArticles;
+  // Merge: admin posts first, then RSS (tagged so render knows the type)
+  const displayArticles = [
+    ...adminBlogs.map(b => ({ ...b, _type: 'admin' })),
+    ...rssArticles.map(a => ({ ...a, _type: 'rss' })),
+  ];
 
   return (
     <div className="blog-page">
@@ -129,9 +121,7 @@ const BlogPage = () => {
         <div className="blog-page-title-area">
           <h2 className="blog-page-title">Wellbeing Articles</h2>
           <p className="blog-page-subtitle">
-            {hasAdminBlogs
-              ? 'Curated articles on mental health and wellness'
-              : 'Latest mental health articles from trusted sources'}
+            Curated articles and the latest news on mental health and wellness
           </p>
         </div>
         {isAdmin && (
@@ -171,29 +161,29 @@ const BlogPage = () => {
         </div>
       ) : (
         <>
-          {/* RSS badge */}
-          {!hasAdminBlogs && rssArticles.length > 0 && (
+          {/* RSS section label when both types present */}
+          {adminBlogs.length > 0 && rssArticles.length > 0 && (
             <div className="rss-notice">
               <span className="rss-badge">RSS</span>
-              Showing curated articles from trusted mental health sources
+              Also showing curated articles from trusted mental health sources
             </div>
           )}
 
           {/* Blog grid */}
           <div className="blog-grid">
             {displayArticles.map((article) => {
-              const isRss = !hasAdminBlogs;
+              const isRss = article._type === 'rss';
               const imgSrc = isRss
                 ? article.image
                 : article.cover_image || 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?w=400&h=250&fit=crop';
 
               return (
                 <div
-                  key={article.id}
+                  key={article.id || article.link || article.url}
                   className="blog-card"
                   onClick={() => {
                     if (isRss) {
-                      window.open(article.url, '_blank', 'noopener,noreferrer');
+                      window.open(article.link || article.url, '_blank', 'noopener,noreferrer');
                     } else {
                       setViewingBlog({ type: 'admin', data: article });
                     }

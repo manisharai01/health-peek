@@ -127,6 +127,16 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.menuText}>Chat Imports</Text>
           <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
         </TouchableOpacity>
+        {user?.is_admin && (
+          <TouchableOpacity
+            style={[styles.menuItem, styles.adminMenuItem]}
+            onPress={() => navigation.navigate('Blogs', { screen: 'AdminBlog' })}
+          >
+            <MaterialIcons name="create" size={20} color="#7C3AED" style={styles.menuIconStyle} />
+            <Text style={[styles.menuText, styles.adminMenuText]}>Write Article</Text>
+            <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Sign Out */}
@@ -229,6 +239,8 @@ const styles = StyleSheet.create({
   },
   menuIconStyle: { marginRight: SPACING.md },
   menuText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: COLORS.text, flex: 1 },
+  adminMenuItem: { backgroundColor: '#7C3AED08', borderRadius: RADIUS.md },
+  adminMenuText: { color: '#7C3AED' },
   logoutBtn: {
     backgroundColor: COLORS.error + '08',
     paddingVertical: SPACING.lg,

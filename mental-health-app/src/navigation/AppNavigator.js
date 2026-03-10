@@ -27,6 +27,7 @@ import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import SuggestionsScreen from '../screens/dashboard/SuggestionsScreen';
 import BlogListScreen from '../screens/blogs/BlogListScreen';
 import BlogDetailScreen from '../screens/blogs/BlogDetailScreen';
+import AdminBlogScreen from '../screens/blogs/AdminBlogScreen';
 import ExportScreen from '../screens/export/ExportScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 
@@ -77,6 +78,7 @@ function BlogStack() {
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="BlogList" component={BlogListScreen} options={{ headerTitle: () => <LogoTitle title="Articles" /> }} />
       <Stack.Screen name="BlogDetail" component={BlogDetailScreen} options={{ title: 'Article' }} />
+      <Stack.Screen name="AdminBlog" component={AdminBlogScreen} options={{ title: 'Write Article' }} />
     </Stack.Navigator>
   );
 }

@@ -13,7 +13,7 @@ export function AnalysisProvider({ children }) {
     setError(null);
     try {
       const data = await analysisService.getAnalysisHistory(limit);
-      const history = Array.isArray(data) ? data : data?.history || [];
+      const history = Array.isArray(data) ? data : data?.analyses || [];
       setAnalysisHistory(history);
       return history;
     } catch (err) {

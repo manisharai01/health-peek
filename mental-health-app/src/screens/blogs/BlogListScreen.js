@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   RefreshControl,
+  Share,
 } from 'react-native';
 import { blogService } from '../../services';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -18,6 +19,7 @@ export default function BlogListScreen({ navigation }) {
   const [rssArticles, setRssArticles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('blogs');
+  const [likedIds, setLikedIds] = useState(new Set());
 
   const loadBlogs = useCallback(async () => {
     setLoading(true);
@@ -28,9 +30,15 @@ export default function BlogListScreen({ navigation }) {
         blogService.getRssArticles(),
       ]);
 
-      const admin = adminBlogs.status === 'fulfilled' ? (Array.isArray(adminBlogs.value) ? adminBlogs.value : adminBlogs.value?.posts || []) : [];
-      const built = builtIn.status === 'fulfilled' ? (Array.isArray(builtIn.value) ? builtIn.value : []) : [];
-      const rssData = rss.status === 'fulfilled' ? (Array.isArray(rss.value) ? rss.value : rss.value?.articles || []) : [];
+      const admin = adminBlogs.status === 'fulfilled'
+        ? (adminBlogs.value?.blogs || adminBlogs.value?.posts || []).map(b => ({ ...b, _isAdminPost: true }))
+        : [];
+      const built = builtIn.status === 'fulfilled'
+        ? (builtIn.value?.blogs || builtIn.value?.posts || [])
+        : [];
+      const rssData = rss.status === 'fulfilled'
+        ? (rss.value?.articles || rss.value?.posts || [])
+        : [];
 
       setBlogs([...admin, ...built]);
       setRssArticles(rssData);
@@ -47,26 +55,45 @@ export default function BlogListScreen({ navigation }) {
 
   const handleBlogPress = (blog) => {
     if (blog.link || blog.url) {
-      // RSS article - navigate to detail with url
       navigation.navigate('BlogDetail', { blogUrl: blog.link || blog.url, title: blog.title });
     } else {
-      navigation.navigate('BlogDetail', { blogId: blog._id || blog.id });
+      navigation.navigate('BlogDetail', {
+        blogId: blog.id || blog._id,
+        isAdminPost: !!blog._isAdminPost,
+      });
     }
   };
 
   const handleLike = async (blogId) => {
+    if (likedIds.has(blogId)) return;
     try {
-      await blogService.likeBlog(blogId);
+      const res = await blogService.likeBlog(blogId);
+      setLikedIds(prev => new Set([...prev, blogId]));
       setBlogs(prev =>
-        prev.map(b => (b._id || b.id) === blogId ? { ...b, likes: (b.likes || 0) + 1 } : b)
+        prev.map(b => (b.id || b._id) === blogId
+          ? { ...b, likes: res.likes ?? (b.likes || 0) + 1 }
+          : b)
       );
     } catch {
       // Ignore
     }
   };
 
+  const handleShare = async (item) => {
+    try {
+      await Share.share({
+        title: item.title,
+        message: `${item.title}\n\n${item.description || item.summary || ''}\n\nShared from Health Peek`,
+      });
+    } catch {
+      // User cancelled
+    }
+  };
+
   const renderBlogItem = ({ item }) => {
     const isRss = !!(item.link || item.url);
+    const itemId = item.id || item._id;
+    const isLiked = likedIds.has(itemId);
 
     return (
       <TouchableOpacity
@@ -76,7 +103,7 @@ export default function BlogListScreen({ navigation }) {
       >
         {item.cover_image && (
           <Image
-            source={{ uri: item.cover_image.startsWith('data:') ? item.cover_image : `data:image/jpeg;base64,${item.cover_image}` }}
+            source={{ uri: item.cover_image.startsWith('data:') ? item.cover_image : item.cover_image }}
             style={styles.coverImage}
             resizeMode="cover"
           />
@@ -108,15 +135,29 @@ export default function BlogListScreen({ navigation }) {
             {item.author_email && (
               <Text style={styles.authorText}>By {item.author_email}</Text>
             )}
-            {!isRss && item._id && (
+            <View style={styles.actionRow}>
+              {!isRss && itemId && (
+                <TouchableOpacity
+                  style={[styles.likeBtn, isLiked && styles.likeBtnActive]}
+                  onPress={() => handleLike(itemId)}
+                >
+                  <MaterialIcons
+                    name={isLiked ? 'favorite' : 'favorite-border'}
+                    size={14}
+                    color={isLiked ? '#FFFFFF' : COLORS.error}
+                  />
+                  <Text style={[styles.likeBtnText, isLiked && { color: '#FFFFFF' }]}>
+                    {item.likes || 0}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                style={styles.likeBtn}
-                onPress={() => handleLike(item._id)}
+                style={styles.shareBtn}
+                onPress={() => handleShare(item)}
               >
-                <MaterialIcons name="favorite" size={12} color={COLORS.error} />
-                <Text style={styles.likeBtnText}>{item.likes || 0}</Text>
+                <MaterialIcons name="share" size={14} color={COLORS.primary} />
               </TouchableOpacity>
-            )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -156,7 +197,7 @@ export default function BlogListScreen({ navigation }) {
       ) : (
         <FlatList
           data={currentData}
-          keyExtractor={(item, i) => item._id || item.id || item.link || `${i}`}
+          keyExtractor={(item, i) => item.id || item._id || item.link || `${i}`}
           renderItem={renderBlogItem}
           contentContainerStyle={styles.list}
           refreshControl={
@@ -176,7 +217,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     padding: SPACING.sm,
     paddingHorizontal: SPACING.md,
-    borderBottomWidth: 0,
     gap: SPACING.sm,
   },
   tab: {
@@ -213,16 +253,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.md,
   },
-  authorText: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textLight },
+  authorText: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: COLORS.textLight, flex: 1 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   likeBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 4,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     borderRadius: RADIUS.full,
-    backgroundColor: COLORS.secondary + '10',
+    backgroundColor: COLORS.error + '12',
+    borderWidth: 1,
+    borderColor: COLORS.error + '30',
   },
-  likeBtnText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.secondary },
+  likeBtnActive: {
+    backgroundColor: COLORS.error,
+    borderColor: COLORS.error,
+  },
+  likeBtnText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.error },
+  shareBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primary + '12',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '25',
+  },
   separator: { height: SPACING.md },
-});
+});

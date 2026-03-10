@@ -75,11 +75,13 @@ export default function AuthScreen() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.darkBg} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
           bounces={false}
         >
           {/* Dark Branding Panel */}
@@ -272,6 +274,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: Platform.OS === 'android' ? 24 : 0,
   },
   brandingPanel: {
     paddingTop: Platform.OS === 'ios' ? 60 : 50,

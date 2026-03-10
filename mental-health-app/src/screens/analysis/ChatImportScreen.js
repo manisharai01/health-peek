@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,57 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+  NativeModules,
 } from 'react-native';
 import { pick, isCancel } from '@react-native-documents/picker';
+import RNBlobUtil from 'react-native-blob-util';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const WHATSAPP_STEPS = [
+  { icon: 'chat', text: 'Open WhatsApp and go to the chat you want to analyze' },
+  { icon: 'more-vert', text: 'Tap the 3-dot menu (⋮) at the top right' },
+  { icon: 'more-horiz', text: 'Tap "More" → "Export chat"' },
+  { icon: 'image-not-supported', text: 'Choose "Without Media" to get a .txt file' },
+  { icon: 'share', text: 'Share the .txt file and select this app — it loads automatically!' },
+];
+
+// Guess format from URI filename or text content
+function guessFormat(uri, text) {
+  const name = (uri || '').toLowerCase();
+  if (name.includes('whatsapp')) return 'whatsapp';
+  if (name.includes('telegram')) return 'telegram';
+  if (name.includes('discord')) return 'discord';
+  if (name.includes('imessage') || name.includes('sms')) return 'imessage';
+  if (text) {
+    if (/\d{1,2}\/\d{1,2}\/\d{2,4},?\s*\d{1,2}:\d{2}/.test(text)) return 'whatsapp';
+    if (/\[\d{4}-\d{2}-\d{2}/.test(text)) return 'telegram';
+  }
+  return 'whatsapp';
+}
+
+async function readSharedFile(uri) {
+  // Try fetch for file:// and content:// URIs
+  try {
+    const res = await fetch(uri);
+    const text = await res.text();
+    if (text && text.trim().length > 0) return text;
+  } catch (_) {}
+  // Fallback: RNBlobUtil for file:// paths
+  try {
+    const path = uri.replace(/^file:\/\//, '');
+    return await RNBlobUtil.fs.readFile(path, 'utf8');
+  } catch (_) {}
+  return null;
+}
 
 export default function ChatImportScreen({ navigation }) {
   const [content, setContent] = useState('');
@@ -20,6 +66,32 @@ export default function ChatImportScreen({ navigation }) {
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [guideExpanded, setGuideExpanded] = useState(true);
+  const [sharedBanner, setSharedBanner] = useState(false);
+
+  // On mount: check for a pending share intent from WhatsApp / other apps
+  useEffect(() => {
+    const checkShareIntent = async () => {
+      try {
+        const ShareIntentModule = NativeModules.ShareIntentModule;
+        if (!ShareIntentModule) return;
+        const shared = await ShareIntentModule.getSharedFile();
+        if (!shared) return;
+
+        let text = shared.text || null;
+        if (!text && shared.uri) {
+          text = await readSharedFile(shared.uri);
+        }
+        if (!text) return;
+
+        setContent(text);
+        setFormatType(guessFormat(shared.uri, text));
+        setSharedBanner(true);
+        setGuideExpanded(false);
+      } catch (_) {}
+    };
+    checkShareIntent();
+  }, []);
 
   const formats = [
     { key: 'whatsapp', label: 'WhatsApp', icon: 'chat' },
@@ -29,17 +101,34 @@ export default function ChatImportScreen({ navigation }) {
     { key: 'generic', label: 'Generic', icon: 'description' },
   ];
 
+  const toggleGuide = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setGuideExpanded(v => !v);
+  };
+
   const handleFilePick = async () => {
     try {
       const [file] = await pick({
         type: ['text/plain', '*/*'],
       });
-      const response = await fetch(file.uri);
-      const text = await response.text();
+      let text = '';
+      // Try fetch first; fall back to RNBlobUtil for content:// URIs
+      try {
+        const response = await fetch(file.uri);
+        text = await response.text();
+      } catch {
+        const path = file.uri.replace(/^file:\/\//, '');
+        text = await RNBlobUtil.fs.readFile(path, 'utf8');
+      }
+      if (!text || text.trim().length === 0) {
+        Alert.alert('Empty File', 'The selected file appears to be empty.');
+        return;
+      }
       setContent(text);
+      Alert.alert('File Loaded', `Loaded ${text.length.toLocaleString()} characters.`);
     } catch (err) {
       if (!isCancel(err)) {
-        Alert.alert('Error', 'Failed to read file');
+        Alert.alert('Error', 'Failed to read file. Make sure you select a .txt chat export.');
       }
     }
   };
@@ -130,6 +219,18 @@ export default function ChatImportScreen({ navigation }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+
+      {/* ── Shared file banner ── */}
+      {sharedBanner && (
+        <View style={styles.sharedBanner}>
+          <MaterialIcons name="check-circle" size={18} color={COLORS.success} />
+          <Text style={styles.sharedBannerText}>Chat file loaded from share — ready to analyze!</Text>
+          <TouchableOpacity onPress={() => setSharedBanner(false)}>
+            <MaterialIcons name="close" size={16} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Format Selector */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Chat Format</Text>
@@ -155,6 +256,41 @@ export default function ChatImportScreen({ navigation }) {
           </View>
         </ScrollView>
       </View>
+
+      {/* WhatsApp Export Guide */}
+      {formatType === 'whatsapp' && (
+        <View style={styles.guideCard}>
+          <TouchableOpacity style={styles.guideHeader} onPress={toggleGuide} activeOpacity={0.7}>
+            <MaterialIcons name="info-outline" size={18} color="#25D366" style={{ marginRight: SPACING.sm }} />
+            <Text style={styles.guideTitle}>How to export a WhatsApp chat</Text>
+            <MaterialIcons
+              name={guideExpanded ? 'expand-less' : 'expand-more'}
+              size={20}
+              color="#25D366"
+              style={{ marginLeft: 'auto' }}
+            />
+          </TouchableOpacity>
+          {guideExpanded && (
+            <View style={styles.guideSteps}>
+              {WHATSAPP_STEPS.map((step, i) => (
+                <View key={i} style={styles.guideStep}>
+                  <View style={styles.guideStepNum}>
+                    <Text style={styles.guideStepNumText}>{i + 1}</Text>
+                  </View>
+                  <MaterialIcons name={step.icon} size={16} color="#25D366" style={{ marginRight: SPACING.sm }} />
+                  <Text style={styles.guideStepText}>{step.text}</Text>
+                </View>
+              ))}
+              <View style={styles.guideTip}>
+                <MaterialIcons name="lightbulb-outline" size={14} color={COLORS.primary} style={{ marginRight: 4 }} />
+                <Text style={styles.guideTipText}>
+                  The exported file is named like "WhatsApp Chat with Name.txt"
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Your Name */}
       <View style={styles.card}>
@@ -248,6 +384,44 @@ const styles = StyleSheet.create({
   formatIconStyle: { marginRight: SPACING.xs },
   formatLabel: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
   formatLabelActive: { color: COLORS.primary },
+  guideCard: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: '#25D36630',
+    ...SHADOWS.small,
+  },
+  guideHeader: { flexDirection: 'row', alignItems: 'center' },
+  guideTitle: { ...FONTS.semiBold, fontSize: FONTS.sizes.md, color: '#1A7A3A', flex: 1 },
+  guideSteps: { marginTop: SPACING.md },
+  guideStep: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.sm,
+  },
+  guideStepNum: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#25D366',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.sm,
+    marginTop: 1,
+  },
+  guideStepNumText: { ...FONTS.bold, fontSize: 10, color: '#FFF' },
+  guideStepText: { ...FONTS.regular, fontSize: FONTS.sizes.sm, color: '#1A7A3A', flex: 1, lineHeight: 18 },
+  guideTip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    backgroundColor: COLORS.primary + '10',
+    borderRadius: RADIUS.md,
+    padding: SPACING.sm,
+  },
+  guideTipText: { ...FONTS.regular, fontSize: FONTS.sizes.xs, color: COLORS.primary, flex: 1 },
   nameInput: {
     backgroundColor: COLORS.background,
     borderRadius: RADIUS.md,
@@ -313,4 +487,16 @@ const styles = StyleSheet.create({
   sentimentPct: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.text, width: 40, textAlign: 'right' },
   warningText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.error, marginBottom: SPACING.xs, lineHeight: 20 },
   periodText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.textSecondary },
+  sharedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    backgroundColor: COLORS.success + '15',
+    borderWidth: 1,
+    borderColor: COLORS.success + '40',
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  sharedBannerText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.success, flex: 1 },
 });
