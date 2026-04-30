@@ -17,7 +17,8 @@ import { pick, isCancel } from '@react-native-documents/picker';
 import RNBlobUtil from 'react-native-blob-util';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -88,6 +89,8 @@ async function readSharedFile(uri) {
 }
 
 export default function ChatImportScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const [content, setContent] = useState('');
   const [formatType, setFormatType] = useState('whatsapp');
   const [userName, setUserName] = useState('');
@@ -433,7 +436,7 @@ export default function ChatImportScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scrollContent: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
   card: {

@@ -4,6 +4,7 @@ import apiService from './services/api';
 import { dashboardService } from './services';
 import AuthForm from './components/GoogleAuthButton';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { AnalysisProvider, useAnalysis } from './context/AnalysisContext';
 import { ErrorAlert } from './components/common';
 import { DashboardSkeleton, MoodTrendsSkeleton, SuggestionsSkeleton, ExportSkeleton } from './components/common/SkeletonLoader';
@@ -12,9 +13,11 @@ import BlogPage from './components/analysis/BlogPage';
 import CompanionChat from './components/companion/CompanionChat';
 import SuggestionCard from './components/dashboard/SuggestionCard';
 import './App.css';
+import './dark-theme.css';
 
 function AppContent() {
   const { logout, user } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const { clearHistory, loadAnalysisHistory } = useAnalysis();
   const [activeSection, setActiveSection] = useState('analyze');
   const [dashboardData, setDashboardData] = useState(null);
@@ -244,6 +247,23 @@ function AppContent() {
           </div>
           <span className="user-name">{user?.name || user?.email}</span>
         </div>
+        <button
+          className="theme-toggle-btn"
+          onClick={toggleTheme}
+          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label="Toggle theme"
+        >
+          {isDark ? (
+            <svg className="theme-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+            </svg>
+          ) : (
+            <svg className="theme-toggle-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+          )}
+        </button>
         <button 
           className="sign-out-btn"
           onClick={handleSignOutClick}

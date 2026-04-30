@@ -20,9 +20,12 @@ import { analysisService, voiceService } from '../../services';
 import { useAnalysis } from '../../context/AnalysisContext';
 import { AnalysisResultCard } from '../../components/AnalysisComponents';
 import { LoadingOverlay, ErrorBanner } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AnalyzeScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const { addAnalysis } = useAnalysis();
   const [message, setMessage] = useState('');
   const [result, setResult] = useState(null);
@@ -347,7 +350,7 @@ export default function AnalyzeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { flex: 1 },
   scrollContent: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },

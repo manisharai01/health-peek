@@ -18,11 +18,14 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../context/AuthContext';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
 export default function AuthScreen() {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -75,8 +78,8 @@ export default function AuthScreen() {
       <StatusBar barStyle="light-content" backgroundColor={COLORS.darkBg} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -267,7 +270,7 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.darkBg,

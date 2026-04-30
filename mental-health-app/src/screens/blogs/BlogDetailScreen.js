@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { blogService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
-// ─── Rich text: parse **bold**, *italic*, # H1, ## H2, ### H3, - bullet ───────
+// ─── Inline parser (pure, no styles needed) ──────────────────────────────────
 function parseInline(text) {
   const tokens = [];
   const regex = /(\*\*[^*]+?\*\*|\*[^*]+?\*)/g;
@@ -37,60 +38,61 @@ function parseInline(text) {
   return tokens;
 }
 
-function InlineLine({ text, baseStyle }) {
-  const tokens = parseInline(text);
-  return (
-    <Text style={baseStyle}>
-      {tokens.map((tok, i) => (
-        <Text
-          key={i}
-          style={[
-            tok.bold && styles.boldText,
-            tok.italic && styles.italicText,
-          ]}
-        >
-          {tok.text}
-        </Text>
-      ))}
-    </Text>
-  );
-}
-
-function RichText({ text, baseStyle }) {
-  if (!text) return null;
-  const lines = text.split('\n');
-  return (
-    <View>
-      {lines.map((line, i) => {
-        if (line.startsWith('### ')) {
-          return <Text key={i} style={styles.h3}>{line.slice(4)}</Text>;
-        }
-        if (line.startsWith('## ')) {
-          return <Text key={i} style={styles.h2}>{line.slice(3)}</Text>;
-        }
-        if (line.startsWith('# ')) {
-          return <Text key={i} style={styles.h1}>{line.slice(2)}</Text>;
-        }
-        if (line.startsWith('- ') || line.startsWith('• ')) {
-          return (
-            <View key={i} style={styles.bulletRow}>
-              <Text style={styles.bulletDot}>•</Text>
-              <InlineLine text={line.slice(2)} baseStyle={[styles.body, styles.bulletLineText, baseStyle]} />
-            </View>
-          );
-        }
-        if (line.trim() === '') {
-          return <View key={i} style={{ height: SPACING.sm }} />;
-        }
-        return <InlineLine key={i} text={line} baseStyle={[styles.body, baseStyle]} />;
-      })}
-    </View>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function BlogDetailScreen({ route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS), [COLORS]);
+
+  function InlineLine({ text, baseStyle }) {
+    const tokens = parseInline(text);
+    return (
+      <Text style={baseStyle}>
+        {tokens.map((tok, i) => (
+          <Text
+            key={i}
+            style={[
+              tok.bold && styles.boldText,
+              tok.italic && styles.italicText,
+            ]}
+          >
+            {tok.text}
+          </Text>
+        ))}
+      </Text>
+    );
+  }
+
+  function RichText({ text, baseStyle }) {
+    if (!text) return null;
+    const lines = text.split('\n');
+    return (
+      <View>
+        {lines.map((line, i) => {
+          if (line.startsWith('### ')) {
+            return <Text key={i} style={styles.h3}>{line.slice(4)}</Text>;
+          }
+          if (line.startsWith('## ')) {
+            return <Text key={i} style={styles.h2}>{line.slice(3)}</Text>;
+          }
+          if (line.startsWith('# ')) {
+            return <Text key={i} style={styles.h1}>{line.slice(2)}</Text>;
+          }
+          if (line.startsWith('- ') || line.startsWith('• ')) {
+            return (
+              <View key={i} style={styles.bulletRow}>
+                <Text style={styles.bulletDot}>•</Text>
+                <InlineLine text={line.slice(2)} baseStyle={[styles.body, styles.bulletLineText, baseStyle]} />
+              </View>
+            );
+          }
+          if (line.trim() === '') {
+            return <View key={i} style={{ height: SPACING.sm }} />;
+          }
+          return <InlineLine key={i} text={line} baseStyle={[styles.body, baseStyle]} />;
+        })}
+      </View>
+    );
+  }
+
   const { blogId, blogUrl, title, isAdminPost } = route.params || {};
   const [blog, setBlog] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -309,7 +311,7 @@ export default function BlogDetailScreen({ route }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 60 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },

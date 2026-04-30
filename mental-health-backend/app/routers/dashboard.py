@@ -118,7 +118,7 @@ async def export_data(
         )
         
         export_data = {
-            "export_date": analysis_service.datetime.utcnow().isoformat(),
+            "export_date": datetime.utcnow().isoformat(),
             "time_range": time_range,
             "summary": stats,
             "analyses": analyses,

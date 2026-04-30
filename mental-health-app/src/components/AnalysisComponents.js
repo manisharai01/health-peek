@@ -1,7 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+
+function useStyles() {
+  const { colors } = useTheme();
+  return { COLORS: colors, styles: React.useMemo(() => makeStyles(colors), [colors]) };
+}
 
 const SENTIMENT_ICONS = {
   positive: 'sentiment-satisfied-alt',
@@ -11,6 +17,7 @@ const SENTIMENT_ICONS = {
 };
 
 export function SentimentBadge({ sentiment, size = 'md' }) {
+  const { COLORS, styles } = useStyles();
   const colorMap = {
     positive: COLORS.positive,
     negative: COLORS.negative,
@@ -32,6 +39,7 @@ export function SentimentBadge({ sentiment, size = 'md' }) {
 }
 
 export function ConfidenceBar({ confidence }) {
+  const { COLORS, styles } = useStyles();
   const pct = Math.round((confidence || 0) * 100);
   const color = pct >= 70 ? COLORS.positive : pct >= 40 ? COLORS.warning : COLORS.error;
 
@@ -49,6 +57,7 @@ export function ConfidenceBar({ confidence }) {
 }
 
 export function EmotionChips({ emotions }) {
+  const { styles } = useStyles();
   if (!emotions || Object.keys(emotions).length === 0) return null;
 
   const sorted = Object.entries(emotions)
@@ -72,6 +81,7 @@ export function EmotionChips({ emotions }) {
 }
 
 export function RiskIndicator({ sentiment, confidence }) {
+  const { COLORS, styles } = useStyles();
   let level = 'Low';
   let color = COLORS.riskLow;
   const conf = confidence || 0;
@@ -93,6 +103,7 @@ export function RiskIndicator({ sentiment, confidence }) {
 }
 
 export function AnalysisResultCard({ result }) {
+  const { styles } = useStyles();
   if (!result) return null;
 
   return (
@@ -116,7 +127,7 @@ export function AnalysisResultCard({ result }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',

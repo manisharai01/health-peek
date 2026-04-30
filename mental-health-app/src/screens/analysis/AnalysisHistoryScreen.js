@@ -12,9 +12,12 @@ import { useAnalysis } from '../../context/AnalysisContext';
 import { SentimentBadge, ConfidenceBar } from '../../components/AnalysisComponents';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { EmptyState, ConfirmDialog } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function AnalysisHistoryScreen() {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const { analysisHistory, isLoading, loadAnalysisHistory, removeAnalysis } = useAnalysis();
   const [deleteTarget, setDeleteTarget] = useState(null);
 
@@ -91,7 +94,7 @@ export default function AnalysisHistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   list: { padding: SPACING.lg },
   historyItem: {

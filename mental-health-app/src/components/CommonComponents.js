@@ -8,9 +8,16 @@ import {
   Modal,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
+
+function useStyles() {
+  const { colors } = useTheme();
+  return { COLORS: colors, styles: React.useMemo(() => makeStyles(colors), [colors]) };
+}
 
 export function LoadingOverlay({ visible, message = 'Loading...' }) {
+  const { COLORS, styles } = useStyles();
   if (!visible) return null;
   return (
     <View style={styles.overlay}>
@@ -23,6 +30,7 @@ export function LoadingOverlay({ visible, message = 'Loading...' }) {
 }
 
 export function ErrorBanner({ message, onDismiss }) {
+  const { COLORS, styles } = useStyles();
   if (!message) return null;
   return (
     <View style={styles.errorBanner}>
@@ -38,6 +46,7 @@ export function ErrorBanner({ message, onDismiss }) {
 }
 
 export function EmptyState({ iconName = 'inbox', title, message, actionLabel, onAction }) {
+  const { COLORS, styles } = useStyles();
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconWrap}>
@@ -55,6 +64,7 @@ export function EmptyState({ iconName = 'inbox', title, message, actionLabel, on
 }
 
 export function ConfirmDialog({ visible, title, message, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel', destructive = false }) {
+  const { styles } = useStyles();
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.modalOverlay}>
@@ -79,6 +89,7 @@ export function ConfirmDialog({ visible, title, message, onConfirm, onCancel, co
 }
 
 export function SectionHeader({ title, subtitle, rightAction }) {
+  const { styles } = useStyles();
   return (
     <View style={styles.sectionHeader}>
       <View>
@@ -91,6 +102,7 @@ export function SectionHeader({ title, subtitle, rightAction }) {
 }
 
 export function TimeRangeSelector({ value, onChange, options }) {
+  const { styles } = useStyles();
   const defaultOptions = options || ['7d', '30d', '90d'];
   const labels = { '7d': '7 Days', '30d': '30 Days', '90d': '90 Days', all: 'All Time' };
   return (
@@ -110,7 +122,7 @@ export function TimeRangeSelector({ value, onChange, options }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.overlay,

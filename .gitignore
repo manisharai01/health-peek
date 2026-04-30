@@ -23,8 +23,13 @@ yarn-error.log*
 
 # Python
 venv/
+.venv/
 __pycache__/
 *.pyc
+
+# JVM crash logs (Android Gradle)
+hs_err_pid*.log
+replay_pid*.log
 
 # macOS
 .DS_Store

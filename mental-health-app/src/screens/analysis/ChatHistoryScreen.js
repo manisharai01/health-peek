@@ -11,15 +11,19 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
 import { EmptyState, ConfirmDialog } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
-const HEALTH_CONFIG = {
+const buildHealthConfig = (COLORS) => ({
   healthy: { color: COLORS.success, icon: 'check-circle', label: 'Healthy' },
   moderate: { color: COLORS.warning, icon: 'error-outline', label: 'Moderate' },
   concerning: { color: COLORS.error, icon: 'warning', label: 'Concerning' },
-};
+});
 
 export default function ChatHistoryScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
+  const HEALTH_CONFIG = React.useMemo(() => buildHealthConfig(COLORS), [COLORS]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -173,7 +177,7 @@ export default function ChatHistoryScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   list: { padding: SPACING.lg },
   card: {

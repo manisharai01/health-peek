@@ -9,15 +9,48 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { analysisService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
-
-const HEALTH_CONFIG = {
-  healthy:    { color: COLORS.success, icon: 'check-circle',  label: 'Healthy',    bg: '#10B98112' },
-  moderate:   { color: COLORS.warning, icon: 'error-outline', label: 'Moderate',   bg: '#F59E0B12' },
-  concerning: { color: COLORS.error,   icon: 'warning',       label: 'Concerning', bg: '#EF444412' },
-};
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function ChatDetailScreen({ route }) {
+  const { colors: COLORS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS), [COLORS]);
+  const HEALTH_CONFIG = React.useMemo(() => ({
+    healthy:    { color: COLORS.success, icon: 'check-circle',  label: 'Healthy',    bg: COLORS.success + '1F' },
+    moderate:   { color: COLORS.warning, icon: 'error-outline', label: 'Moderate',   bg: COLORS.warning + '1F' },
+    concerning: { color: COLORS.error,   icon: 'warning',       label: 'Concerning', bg: COLORS.error + '1F' },
+  }), [COLORS]);
+
+  function SectionCard({ icon, title, titleColor, accent, children }) {
+    return (
+      <View style={[styles.card, accent ? { borderLeftWidth: 3, borderLeftColor: accent } : null]}>
+        <View style={styles.cardTitleRow}>
+          <MaterialIcons name={icon} size={18} color={titleColor || COLORS.text} />
+          <Text style={[styles.cardTitleText, titleColor ? { color: titleColor } : null]}>{title}</Text>
+        </View>
+        {children}
+      </View>
+    );
+  }
+  function StatBox({ label, value, small }) {
+    return (
+      <View style={styles.statBox}>
+        <Text style={[styles.statValue, small && styles.statValueSm]} numberOfLines={1} adjustsFontSizeToFit>
+          {value}
+        </Text>
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    );
+  }
+  function MetricRow({ label, value }) {
+    return (
+      <View style={styles.metricRow}>
+        <Text style={styles.metricLabel}>{label}</Text>
+        <Text style={styles.metricValue}>{value}</Text>
+      </View>
+    );
+  }
+
   const { chatId } = route.params;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -344,43 +377,9 @@ export default function ChatDetailScreen({ route }) {
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function SectionCard({ icon, title, titleColor, accent, children }) {
-  return (
-    <View style={[styles.card, accent ? { borderLeftWidth: 3, borderLeftColor: accent } : null]}>
-      <View style={styles.cardTitleRow}>
-        <MaterialIcons name={icon} size={18} color={titleColor || COLORS.text} />
-        <Text style={[styles.cardTitleText, titleColor ? { color: titleColor } : null]}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function StatBox({ label, value, small }) {
-  return (
-    <View style={styles.statBox}>
-      <Text style={[styles.statValue, small && styles.statValueSm]} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function MetricRow({ label, value }) {
-  return (
-    <View style={styles.metricRow}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
-    </View>
-  );
-}
-
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: SPACING.md },

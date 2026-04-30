@@ -1,0 +1,1004 @@
+/* ============================================================
+   COMPREHENSIVE DARK THEME
+   Calm slate-indigo palette. Imported last so it overrides any
+   component-level white backgrounds and dark text.
+   Activated by [data-theme="dark"] on <html>.
+   ============================================================ */
+
+:root[data-theme="dark"] {
+  --bg:           #0F172A;   /* slate-900  */
+  --bg-elev:      #111827;   /* slate-950 / elevated wash */
+  --surface:      #1E293B;   /* slate-800  */
+  --surface-2:    #273449;   /* between 800 and 700 */
+  --card:         #1E293B;
+  --card-hover:   #2A3850;
+  --border:       #334155;   /* slate-700  */
+  --border-soft:  #1F2A3D;
+  --text:         #E5E7EB;   /* slate-200  */
+  --text-strong:  #F8FAFC;
+  --text-muted:   #94A3B8;   /* slate-400  */
+  --text-faint:   #64748B;   /* slate-500  */
+  --accent:       #818CF8;   /* indigo-400 — calm primary */
+  --accent-hover: #A5B4FC;
+  --accent-soft:  rgba(129, 140, 248, 0.16);
+  --accent-2:     #5EEAD4;   /* teal-300   — calm secondary */
+  --success:      #34D399;
+  --warning:      #FBBF24;
+  --danger:       #F87171;
+  --info:         #60A5FA;
+  --shadow:       0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-sm:    0 2px 8px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+/* -- Base body -- */
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+body[data-theme="dark"],
+[data-theme="dark"] body,
+[data-theme="dark"] #root,
+[data-theme="dark"] .App {
+  background: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Soften the animated background gradient */
+[data-theme="dark"] .App {
+  background: radial-gradient(ellipse at top left,  rgba(129, 140, 248, 0.10), transparent 60%),
+              radial-gradient(ellipse at bottom right, rgba(94, 234, 212, 0.07), transparent 60%),
+              var(--bg) !important;
+  background-attachment: fixed !important;
+  animation: none !important;
+}
+[data-theme="dark"] .App::before,
+[data-theme="dark"] .App::after { display: none !important; }
+
+/* -- Typography defaults -- */
+[data-theme="dark"] body,
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] li,
+[data-theme="dark"] td,
+[data-theme="dark"] th,
+[data-theme="dark"] dd,
+[data-theme="dark"] dt,
+[data-theme="dark"] label,
+[data-theme="dark"] small {
+  color: var(--text);
+}
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--text-strong);
+}
+[data-theme="dark"] .muted,
+[data-theme="dark"] .text-muted,
+[data-theme="dark"] .subtitle,
+[data-theme="dark"] .meta,
+[data-theme="dark"] .hint {
+  color: var(--text-muted) !important;
+}
+
+/* -- Links -- */
+[data-theme="dark"] a {
+  color: var(--accent-hover);
+}
+[data-theme="dark"] a:hover { color: var(--accent-2); }
+
+/* -- Generic surfaces / cards -- */
+[data-theme="dark"] .card,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .box,
+[data-theme="dark"] .modal,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .dialog,
+[data-theme="dark"] .popover,
+[data-theme="dark"] .dropdown,
+[data-theme="dark"] .tooltip {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* -- Common chat / blog / history surfaces (component CSS forces white) -- */
+[data-theme="dark"] .chat-history,
+[data-theme="dark"] .chat-history-list,
+[data-theme="dark"] .chat-history-item,
+[data-theme="dark"] .chat-history-empty,
+[data-theme="dark"] .chat-history-loading,
+[data-theme="dark"] .chat-detail,
+[data-theme="dark"] .chat-detail-card,
+[data-theme="dark"] .chat-detail-stats .stat-card,
+[data-theme="dark"] .chat-detail-section,
+[data-theme="dark"] .chat-detail-section-card,
+[data-theme="dark"] .chat-import,
+[data-theme="dark"] .chat-import-form,
+[data-theme="dark"] .chat-import-card,
+[data-theme="dark"] .chat-import-result,
+[data-theme="dark"] .analysis-history,
+[data-theme="dark"] .analysis-history-item,
+[data-theme="dark"] .analysis-history-empty,
+[data-theme="dark"] .blog-page,
+[data-theme="dark"] .blog-card,
+[data-theme="dark"] .blog-list-item,
+[data-theme="dark"] .blog-view,
+[data-theme="dark"] .blog-view-content,
+[data-theme="dark"] .blog-section,
+[data-theme="dark"] .companion-chat,
+[data-theme="dark"] .chat-window,
+[data-theme="dark"] .chat-messages,
+[data-theme="dark"] .companion-input,
+[data-theme="dark"] .companion-input-area,
+[data-theme="dark"] .message-analyzer,
+[data-theme="dark"] .message-analyzer-card,
+[data-theme="dark"] .voice-analyzer,
+[data-theme="dark"] .suggestion-card,
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .confirm-dialog,
+[data-theme="dark"] .confirm-dialog-content,
+/* App.css panels that hard-code white backgrounds */
+[data-theme="dark"] .suggestions,
+[data-theme="dark"] .mood-trends,
+[data-theme="dark"] .dashboard,
+[data-theme="dark"] .export-section,
+[data-theme="dark"] .analyze-section,
+[data-theme="dark"] .trends-section,
+[data-theme="dark"] .feature-item,
+[data-theme="dark"] .stat-item,
+[data-theme="dark"] .chart-container,
+[data-theme="dark"] .input-section,
+[data-theme="dark"] textarea.message-input {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* Headings inside surfaces above */
+[data-theme="dark"] .chat-history h1,
+[data-theme="dark"] .chat-history h2,
+[data-theme="dark"] .chat-history h3,
+[data-theme="dark"] .chat-history h4,
+[data-theme="dark"] .chat-history-item h3,
+[data-theme="dark"] .chat-history-item h4,
+[data-theme="dark"] .chat-history-item p,
+[data-theme="dark"] .chat-history-item span,
+[data-theme="dark"] .blog-card h3,
+[data-theme="dark"] .blog-card h4,
+[data-theme="dark"] .blog-card p,
+[data-theme="dark"] .blog-card span,
+[data-theme="dark"] .blog-view h1,
+[data-theme="dark"] .blog-view h2,
+[data-theme="dark"] .blog-view h3,
+[data-theme="dark"] .blog-view p,
+[data-theme="dark"] .blog-view li,
+[data-theme="dark"] .analysis-history-item h3,
+[data-theme="dark"] .analysis-history-item h4,
+[data-theme="dark"] .analysis-history-item p,
+[data-theme="dark"] .analysis-history-item span,
+[data-theme="dark"] .empty-state h2,
+[data-theme="dark"] .empty-state h3,
+[data-theme="dark"] .empty-state p,
+[data-theme="dark"] .suggestion-card h3,
+[data-theme="dark"] .suggestion-card p,
+[data-theme="dark"] .message-analyzer h2,
+[data-theme="dark"] .message-analyzer h3,
+[data-theme="dark"] .message-analyzer p,
+[data-theme="dark"] .message-analyzer label,
+[data-theme="dark"] .voice-analyzer h2,
+[data-theme="dark"] .voice-analyzer h3,
+[data-theme="dark"] .voice-analyzer p {
+  color: var(--text-strong) !important;
+}
+[data-theme="dark"] .chat-history-item .meta,
+[data-theme="dark"] .chat-history-item .date,
+[data-theme="dark"] .chat-history-item .timestamp,
+[data-theme="dark"] .chat-history-item small,
+[data-theme="dark"] .blog-card .meta,
+[data-theme="dark"] .blog-card .date,
+[data-theme="dark"] .blog-card small,
+[data-theme="dark"] .analysis-history-item .meta,
+[data-theme="dark"] .analysis-history-item .date,
+[data-theme="dark"] .analysis-history-item small,
+[data-theme="dark"] .suggestion-card .meta {
+  color: var(--text-muted) !important;
+}
+
+/* -- Form controls -- */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+  caret-color: var(--accent);
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-faint) !important;
+  opacity: 1;
+}
+[data-theme="dark"] input:focus,
+[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+  outline: none;
+}
+[data-theme="dark"] select option {
+  background: var(--surface);
+  color: var(--text-strong);
+}
+/* Autofill */
+[data-theme="dark"] input:-webkit-autofill {
+  -webkit-text-fill-color: var(--text-strong) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-elev) inset !important;
+  caret-color: var(--accent);
+}
+
+/* -- Buttons -- */
+[data-theme="dark"] button {
+  color: var(--text);
+}
+[data-theme="dark"] .btn,
+[data-theme="dark"] .button,
+[data-theme="dark"] .secondary-btn,
+[data-theme="dark"] .ghost-btn {
+  background: var(--surface-2);
+  color: var(--text-strong);
+  border: 1px solid var(--border);
+}
+[data-theme="dark"] .btn:hover,
+[data-theme="dark"] .button:hover,
+[data-theme="dark"] .secondary-btn:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+}
+[data-theme="dark"] .primary-btn,
+[data-theme="dark"] .submit-btn,
+[data-theme="dark"] .start-analysis-btn,
+[data-theme="dark"] .cta-btn,
+[data-theme="dark"] .login-btn,
+[data-theme="dark"] .send-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  border: none !important;
+  box-shadow: 0 6px 18px rgba(129, 140, 248, 0.32);
+}
+[data-theme="dark"] .danger-btn,
+[data-theme="dark"] .delete-btn,
+[data-theme="dark"] .destructive-btn {
+  background: rgba(248, 113, 113, 0.14) !important;
+  color: var(--danger) !important;
+  border: 1px solid rgba(248, 113, 113, 0.4) !important;
+}
+[data-theme="dark"] button:disabled,
+[data-theme="dark"] .btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* -- Tables -- */
+[data-theme="dark"] table {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+[data-theme="dark"] th {
+  background: var(--surface-2);
+  color: var(--text-strong);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="dark"] td { border-bottom: 1px solid var(--border-soft); }
+[data-theme="dark"] tr:hover td { background: var(--card-hover); }
+
+/* -- Badges / pills -- */
+[data-theme="dark"] .badge,
+[data-theme="dark"] .pill,
+[data-theme="dark"] .tag,
+[data-theme="dark"] .chip {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+}
+[data-theme="dark"] .badge.success, [data-theme="dark"] .pill.success { background: rgba(52,211,153,0.16); color: var(--success); border-color: rgba(52,211,153,0.4); }
+[data-theme="dark"] .badge.warning, [data-theme="dark"] .pill.warning { background: rgba(251,191,36,0.16); color: var(--warning); border-color: rgba(251,191,36,0.4); }
+[data-theme="dark"] .badge.danger,  [data-theme="dark"] .pill.danger,
+[data-theme="dark"] .badge.error,   [data-theme="dark"] .pill.error  { background: rgba(248,113,113,0.16); color: var(--danger); border-color: rgba(248,113,113,0.4); }
+
+/* -- Risk indicators (already styled in App.css; keep parity for component CSS) -- */
+[data-theme="dark"] .risk-low,    [data-theme="dark"] .risk-indicator.low    { background: rgba(52,211,153,0.16) !important; color: var(--success) !important; }
+[data-theme="dark"] .risk-medium, [data-theme="dark"] .risk-indicator.medium { background: rgba(251,191,36,0.16) !important; color: var(--warning) !important; }
+[data-theme="dark"] .risk-high,   [data-theme="dark"] .risk-indicator.high   { background: rgba(248,113,113,0.16) !important; color: var(--danger) !important; }
+
+/* -- Status pills (analysis status) -- */
+[data-theme="dark"] .status-positive { color: var(--success) !important; }
+[data-theme="dark"] .status-negative { color: var(--danger) !important; }
+[data-theme="dark"] .status-neutral  { color: var(--warning) !important; }
+
+/* -- Modal / dialog overlay -- */
+[data-theme="dark"] .modal-overlay,
+[data-theme="dark"] .dialog-overlay,
+[data-theme="dark"] .confirm-dialog-overlay {
+  background: rgba(2, 6, 23, 0.75) !important;
+  backdrop-filter: blur(6px);
+}
+
+/* -- Code / pre -- */
+[data-theme="dark"] code,
+[data-theme="dark"] pre,
+[data-theme="dark"] kbd {
+  background: var(--bg-elev);
+  color: var(--accent-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+[data-theme="dark"] pre { padding: 12px 14px; }
+
+/* -- Dividers -- */
+[data-theme="dark"] hr { border-color: var(--border) !important; }
+
+/* -- Scrollbars (Chromium) -- */
+[data-theme="dark"] ::-webkit-scrollbar         { width: 10px; height: 10px; }
+[data-theme="dark"] ::-webkit-scrollbar-track   { background: var(--bg-elev); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb   { background: var(--border); border-radius: 8px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* -- Selection -- */
+[data-theme="dark"] ::selection {
+  background: var(--accent);
+  color: #0B1020;
+}
+
+/* -- Header / sidebar polish (calmer than bright violet) -- */
+[data-theme="dark"] .app-header {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-bottom: 1px solid var(--border) !important;
+  backdrop-filter: blur(10px);
+}
+[data-theme="dark"] .sidebar {
+  background: rgba(15, 23, 42, 0.92) !important;
+  border-right: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .nav-btn {
+  color: var(--text-muted) !important;
+}
+[data-theme="dark"] .nav-btn:hover {
+  background: var(--accent-soft) !important;
+  color: var(--text-strong) !important;
+}
+[data-theme="dark"] .nav-btn.active {
+  background: linear-gradient(135deg, rgba(129,140,248,0.22), rgba(94,234,212,0.15)) !important;
+  color: var(--text-strong) !important;
+  box-shadow: inset 0 0 0 1px rgba(129,140,248,0.35);
+}
+[data-theme="dark"] .theme-toggle-btn {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--accent-2) !important;
+  box-shadow: var(--shadow-sm);
+}
+[data-theme="dark"] .theme-toggle-btn:hover {
+  background: var(--card-hover) !important;
+  border-color: var(--accent) !important;
+}
+
+/* -- Header brand text -- */
+[data-theme="dark"] .header-left h1,
+[data-theme="dark"] .header-brand,
+[data-theme="dark"] .user-name,
+[data-theme="dark"] .user-email {
+  color: var(--text-strong) !important;
+}
+[data-theme="dark"] .user-email { color: var(--text-muted) !important; }
+
+/* -- Login / auth -- */
+[data-theme="dark"] .login-container,
+[data-theme="dark"] .auth-container,
+[data-theme="dark"] .login-right-panel,
+[data-theme="dark"] .login-left-panel,
+[data-theme="dark"] .auth-card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] .login-form input,
+[data-theme="dark"] .auth-form input {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border-color: var(--border) !important;
+}
+
+/* -- Skeleton loader -- */
+[data-theme="dark"] .skeleton,
+[data-theme="dark"] .skeleton-loader {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%) !important;
+}
+
+/* -- Loading spinner ring -- */
+[data-theme="dark"] .loading-spinner,
+[data-theme="dark"] .spinner {
+  border-color: var(--border) !important;
+  border-top-color: var(--accent) !important;
+}
+
+/* -- Error / alert (component variants) -- */
+[data-theme="dark"] .error-alert,
+[data-theme="dark"] .error-message {
+  background: rgba(248,113,113,0.10) !important;
+  color: #FCA5A5 !important;
+  border: 1px solid rgba(248,113,113,0.35) !important;
+}
+
+/* -- Companion chat bubbles -- */
+[data-theme="dark"] .chat-message,
+[data-theme="dark"] .message-bubble {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .chat-message.user,
+[data-theme="dark"] .message-bubble.user {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  border: none !important;
+}
+
+/* -- Misc forced light backgrounds -- */
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background-color: white"] {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+}
+
+/* -- Gradient-clipped headings look dim/invisible in dark mode.
+       Re-paint with a brighter accent gradient. -- */
+[data-theme="dark"] .suggestions h2,
+[data-theme="dark"] .dashboard h2,
+[data-theme="dark"] .mood-trends h2,
+[data-theme="dark"] .export-section h2,
+[data-theme="dark"] .dashboard-header h2,
+[data-theme="dark"] .trends-header h2,
+[data-theme="dark"] .analyze-section h2 {
+  background: linear-gradient(135deg, #C4B5FD, #5EEAD4) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Suggestion priority badges */
+[data-theme="dark"] .priority-low,
+[data-theme="dark"] .suggestion-card .priority-low { background: rgba(52,211,153,0.16) !important; color: var(--success) !important; border: 1px solid rgba(52,211,153,0.4) !important; }
+[data-theme="dark"] .priority-medium,
+[data-theme="dark"] .suggestion-card .priority-medium { background: rgba(251,191,36,0.16) !important; color: var(--warning) !important; border: 1px solid rgba(251,191,36,0.4) !important; }
+[data-theme="dark"] .priority-high,
+[data-theme="dark"] .suggestion-card .priority-high { background: rgba(248,113,113,0.16) !important; color: var(--danger)  !important; border: 1px solid rgba(248,113,113,0.4) !important; }
+
+/* "Learn more" / "Read article" buttons inside cards */
+[data-theme="dark"] .learn-more-btn,
+[data-theme="dark"] .read-article-btn,
+[data-theme="dark"] .suggestion-card a,
+[data-theme="dark"] .suggestion-card button {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(129, 140, 248, 0.32) !important;
+}
+
+/* Suggestion card body text */
+[data-theme="dark"] .suggestion-card h3,
+[data-theme="dark"] .suggestion-card .suggestion-title { color: var(--text-strong) !important; }
+[data-theme="dark"] .suggestion-card p,
+[data-theme="dark"] .suggestion-card .suggestion-text,
+[data-theme="dark"] .suggestion-card .description { color: var(--text) !important; }
+
+/* ============================================================
+   PER-TAB SIDE PANELS / SECTIONS
+   Component-level CSS hard-codes white / light grey on these
+   wrappers. Force them to dark surface tones.
+   ============================================================ */
+
+/* -- Analysis history side panel -- */
+[data-theme="dark"] .analysis-history,
+[data-theme="dark"] .analysis-history h3,
+[data-theme="dark"] .history-list,
+[data-theme="dark"] .history-item,
+[data-theme="dark"] .history-message,
+[data-theme="dark"] .history-footer,
+[data-theme="dark"] .empty-history {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .analysis-history { box-shadow: var(--shadow) !important; }
+[data-theme="dark"] .history-item {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .history-item:hover {
+  background: var(--card-hover) !important;
+  border-color: var(--accent) !important;
+}
+[data-theme="dark"] .history-message {
+  background: var(--surface-2) !important;
+  color: var(--text) !important;
+  border-left: 3px solid var(--accent) !important;
+}
+[data-theme="dark"] .history-meta,
+[data-theme="dark"] .history-footer { border-top-color: var(--border) !important; }
+[data-theme="dark"] .timestamp,
+[data-theme="dark"] .emotions-count,
+[data-theme="dark"] .empty-history,
+[data-theme="dark"] .history-footer small { color: var(--text-muted) !important; }
+[data-theme="dark"] .confidence-score {
+  background: var(--surface-2) !important;
+  color: var(--text-muted) !important;
+}
+[data-theme="dark"] .source-badge {
+  background: var(--accent-soft) !important;
+  color: var(--accent-hover) !important;
+}
+[data-theme="dark"] .show-more-button {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .show-more-button:hover {
+  background: var(--card-hover) !important;
+  border-color: var(--accent) !important;
+}
+
+/* -- Chat history list -- */
+[data-theme="dark"] .chat-history,
+[data-theme="dark"] .chat-history-empty,
+[data-theme="dark"] .chat-history-loading,
+[data-theme="dark"] .empty-state,
+[data-theme="dark"] .chat-list,
+[data-theme="dark"] .chat-list-item {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+[data-theme="dark"] .chat-history h2,
+[data-theme="dark"] .chat-history h3,
+[data-theme="dark"] .chat-list-item h3,
+[data-theme="dark"] .chat-list-item h4 { color: var(--text-strong) !important; }
+[data-theme="dark"] .chat-list-item {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .chat-list-item:hover,
+[data-theme="dark"] .chat-list-item.selected {
+  background: var(--card-hover) !important;
+  border-color: var(--accent) !important;
+}
+
+/* -- Chat import card / form -- */
+[data-theme="dark"] .chat-import,
+[data-theme="dark"] .chat-import-card,
+[data-theme="dark"] .chat-import-form,
+[data-theme="dark"] .chat-import-result,
+[data-theme="dark"] .import-section,
+[data-theme="dark"] .upload-area,
+[data-theme="dark"] .file-list,
+[data-theme="dark"] .file-item {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .upload-area {
+  background: var(--bg-elev) !important;
+  border: 2px dashed var(--border) !important;
+}
+[data-theme="dark"] .upload-area:hover,
+[data-theme="dark"] .upload-area.drag-active {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+}
+[data-theme="dark"] .file-item {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* -- Message analyzer panel -- */
+[data-theme="dark"] .message-analyzer,
+[data-theme="dark"] .analyzer-card,
+[data-theme="dark"] .analyzer-content,
+[data-theme="dark"] .analyzer-result,
+[data-theme="dark"] .analyzer-input-section,
+[data-theme="dark"] .results-panel,
+[data-theme="dark"] .result-card {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+[data-theme="dark"] .analyzer-input-section textarea,
+[data-theme="dark"] .message-analyzer textarea {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .result-card {
+  background: var(--bg-elev) !important;
+}
+
+/* -- Companion chat panels -- */
+[data-theme="dark"] .companion-chat,
+[data-theme="dark"] .chat-window,
+[data-theme="dark"] .chat-messages,
+[data-theme="dark"] .chat-input-area,
+[data-theme="dark"] .companion-input,
+[data-theme="dark"] .companion-input-area,
+[data-theme="dark"] .companion-sidebar,
+[data-theme="dark"] .quick-replies,
+[data-theme="dark"] .quick-reply {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .chat-messages { background: var(--bg) !important; }
+[data-theme="dark"] .chat-input-area input,
+[data-theme="dark"] .chat-input-area textarea,
+[data-theme="dark"] .companion-input input,
+[data-theme="dark"] .companion-input textarea {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .quick-reply {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .quick-reply:hover {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent) !important;
+}
+
+/* -- Blog list / page -- */
+[data-theme="dark"] .blog-page,
+[data-theme="dark"] .blog-list,
+[data-theme="dark"] .blog-card,
+[data-theme="dark"] .blog-card-content,
+[data-theme="dark"] .blog-list-item,
+[data-theme="dark"] .blog-section,
+[data-theme="dark"] .blog-sidebar,
+[data-theme="dark"] .blog-filters,
+[data-theme="dark"] .featured-blog,
+[data-theme="dark"] .blog-categories {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+[data-theme="dark"] .blog-card {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .blog-card:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 8px 28px rgba(129,140,248,0.18) !important;
+}
+[data-theme="dark"] .blog-card h3,
+[data-theme="dark"] .blog-card h4 { color: var(--text-strong) !important; }
+[data-theme="dark"] .blog-card p,
+[data-theme="dark"] .blog-card .excerpt { color: var(--text) !important; }
+[data-theme="dark"] .blog-card .meta,
+[data-theme="dark"] .blog-card .date,
+[data-theme="dark"] .blog-card .author { color: var(--text-muted) !important; }
+
+/* -- Blog detail view -- */
+[data-theme="dark"] .blog-view,
+[data-theme="dark"] .blog-view-content,
+[data-theme="dark"] .blog-article,
+[data-theme="dark"] .blog-content,
+[data-theme="dark"] .blog-meta,
+[data-theme="dark"] .blog-tags,
+[data-theme="dark"] .blog-author,
+[data-theme="dark"] .related-blogs,
+[data-theme="dark"] .related-blog-item {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] .blog-article {
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+}
+[data-theme="dark"] .blog-content blockquote {
+  background: var(--bg-elev) !important;
+  border-left: 4px solid var(--accent) !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] .blog-tags .tag,
+[data-theme="dark"] .blog-tag {
+  background: var(--accent-soft) !important;
+  color: var(--accent-hover) !important;
+  border: 1px solid rgba(129,140,248,0.32) !important;
+}
+[data-theme="dark"] .related-blog-item {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* -- Suggestion card hard gradient (was bright white) -- */
+[data-theme="dark"] .suggestion-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface-2)) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+}
+
+/* -- Confirm dialog -- */
+[data-theme="dark"] .confirm-dialog,
+[data-theme="dark"] .confirm-dialog-content,
+[data-theme="dark"] .dialog-body,
+[data-theme="dark"] .dialog-header,
+[data-theme="dark"] .dialog-footer {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* -- Catch-all for any remaining light surface tones -- */
+[data-theme="dark"] .container,
+[data-theme="dark"] .content,
+[data-theme="dark"] .section,
+[data-theme="dark"] .wrapper,
+[data-theme="dark"] .panel-body,
+[data-theme="dark"] .form-section,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .stats-card,
+[data-theme="dark"] .preview-card {
+  background-color: transparent;
+  color: var(--text);
+}
+
+/* -- Light grey surfaces (#f9fafb, #f3f4f6, #f8fafc, #eef2ff) -- */
+[data-theme="dark"] [class*="-card"]:not(.suggestion-card):not(.blog-card):not(.companion-card),
+[data-theme="dark"] [class*="-section"]:not(.analyze-section):not(.trends-section):not(.export-section) {
+  background-color: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* -- Export & Reports cards (App.css hard-codes white gradient + dark text) -- */
+[data-theme="dark"] .export-options,
+[data-theme="dark"] .export-card {
+  background: linear-gradient(135deg, var(--surface), var(--surface-2)) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+  color: var(--text) !important;
+  backdrop-filter: none !important;
+}
+[data-theme="dark"] .export-options { background: transparent !important; border: none !important; box-shadow: none !important; }
+[data-theme="dark"] .export-card h4 { color: var(--text-strong) !important; }
+[data-theme="dark"] .export-card p  { color: var(--text-muted) !important; }
+[data-theme="dark"] .export-card:hover {
+  border-color: var(--accent) !important;
+  box-shadow: 0 14px 32px rgba(129,140,248,0.22) !important;
+}
+
+/* -- "Time Period" select label/control on Export tab -- */
+[data-theme="dark"] .export-section label,
+[data-theme="dark"] .export-section .time-period-label,
+[data-theme="dark"] .export-section strong { color: var(--text-strong) !important; }
+[data-theme="dark"] .export-section select {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* -- Inline-styled "Note" panel (uses element style attr in App.js) -- */
+[data-theme="dark"] .export-section > div[style*="background: #f0f8ff"],
+[data-theme="dark"] .export-section > div[style*="#f0f8ff"] {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] .export-section > div[style*="#f0f8ff"] p,
+[data-theme="dark"] .export-section > div[style*="#f0f8ff"] strong { color: var(--text) !important; }
+
+/* -- Sidebar user profile block (was light grey #f8f9fa with dark text) -- */
+[data-theme="dark"] .user-profile,
+[data-theme="dark"] .user-info {
+  background: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] .user-name { color: var(--text-strong) !important; }
+[data-theme="dark"] .user-email { color: var(--text-muted) !important; }
+[data-theme="dark"] .user-details { color: var(--text) !important; }
+[data-theme="dark"] .logout-btn {
+  background: rgba(248,113,113,0.16) !important;
+  color: var(--danger) !important;
+  border: 1px solid rgba(248,113,113,0.4) !important;
+}
+[data-theme="dark"] .logout-btn:hover { background: rgba(248,113,113,0.28) !important; }
+
+/* -- Generic kill switch for any remaining inline white backgrounds -- */
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background-color:#fff"],
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background:#f8f9fa"],
+[data-theme="dark"] [style*="background: #f8f9fa"],
+[data-theme="dark"] [style*="background:#f9fafb"],
+[data-theme="dark"] [style*="background: #f9fafb"],
+[data-theme="dark"] [style*="background:#f0f8ff"],
+[data-theme="dark"] [style*="background: #f0f8ff"] {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+/* ============================================================
+   ANALYZE CHAT TAB — final patches
+   ============================================================ */
+
+/* Main content wrapper was hard-coded white (App.css line 1009) */
+[data-theme="dark"] .main-content {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+
+/* The dark-panel that wraps Message Analysis */
+[data-theme="dark"] .chat-form,
+[data-theme="dark"] .single-analysis,
+[data-theme="dark"] .results-section,
+[data-theme="dark"] .single-result {
+  background: transparent !important;
+  color: var(--text) !important;
+}
+[data-theme="dark"] .analysis-content {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow) !important;
+  color: var(--text) !important;
+}
+
+/* "Message Analysis" heading was dark text on dark */
+[data-theme="dark"] .analysis-header,
+[data-theme="dark"] .analysis-header h2 {
+  border-bottom-color: var(--border) !important;
+}
+[data-theme="dark"] .analysis-header h2 {
+  background: linear-gradient(135deg, #C4B5FD, #5EEAD4) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Mode toggle (Single Message / Voice / Bulk Import) — keep readable */
+[data-theme="dark"] .mode-toggle {
+  background: var(--bg-elev) !important;
+  box-shadow: inset 0 0 0 1px var(--border) !important;
+}
+[data-theme="dark"] .mode-btn {
+  color: var(--text-muted) !important;
+  background: transparent !important;
+}
+[data-theme="dark"] .mode-btn.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  box-shadow: 0 4px 14px rgba(129,140,248,0.32) !important;
+}
+
+/* Hint text "Your message is private and secure" + char count */
+[data-theme="dark"] .input-hint,
+[data-theme="dark"] .char-count,
+[data-theme="dark"] .input-footer { color: var(--text-muted) !important; }
+[data-theme="dark"] .char-count.warning { color: var(--warning) !important; }
+
+/* "Share your thoughts" gradient label — repaint brighter */
+[data-theme="dark"] .input-label {
+  background: linear-gradient(135deg, #C4B5FD, #5EEAD4) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Message textarea */
+[data-theme="dark"] .message-input,
+[data-theme="dark"] textarea.message-input {
+  background: var(--bg-elev) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .message-input::placeholder { color: var(--text-faint) !important; }
+[data-theme="dark"] .message-input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Analyze + Clear buttons (covers both .analyze-btn/.clear-btn AND
+   .analyze-button/.clear-button used in ChatForm.js) */
+[data-theme="dark"] .analyze-btn,
+[data-theme="dark"] .analyze-button {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(129,140,248,0.35) !important;
+}
+[data-theme="dark"] .analyze-btn:hover:not(:disabled),
+[data-theme="dark"] .analyze-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent)) !important;
+  box-shadow: 0 12px 30px rgba(129,140,248,0.45) !important;
+}
+[data-theme="dark"] .analyze-btn:disabled,
+[data-theme="dark"] .analyze-button:disabled {
+  background: var(--surface-2) !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+}
+[data-theme="dark"] .clear-btn,
+[data-theme="dark"] .clear-button {
+  background: var(--surface-2) !important;
+  color: var(--text-strong) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+[data-theme="dark"] .clear-btn:hover:not(:disabled),
+[data-theme="dark"] .clear-button:hover:not(:disabled) {
+  background: var(--card-hover) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent-hover) !important;
+}
+[data-theme="dark"] .clear-btn:disabled,
+[data-theme="dark"] .clear-button:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Recent Analysis area + message preview rows */
+[data-theme="dark"] .recent-analysis,
+[data-theme="dark"] .recent-section,
+[data-theme="dark"] .analysis-list,
+[data-theme="dark"] .analysis-item,
+[data-theme="dark"] .result-card,
+[data-theme="dark"] .single-result {
+  background: var(--bg-elev) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+}
+[data-theme="dark"] .analysis-item h3,
+[data-theme="dark"] .analysis-item h4,
+[data-theme="dark"] .recent-analysis h2,
+[data-theme="dark"] .recent-analysis h3,
+[data-theme="dark"] .single-result h3 { color: var(--text-strong) !important; }
+[data-theme="dark"] .analysis-item p,
+[data-theme="dark"] .analysis-item .message-text,
+[data-theme="dark"] .analysis-item .preview { color: var(--text) !important; }
+
+/* Info banner used in ChatForm.js with inline #e7f3ff */
+[data-theme="dark"] .error-message[style*="#e7f3ff"],
+[data-theme="dark"] .error-message[style*="e7f3ff"] {
+  background: var(--accent-soft) !important;
+  border-color: rgba(129,140,248,0.4) !important;
+  color: var(--text-strong) !important;
+}
+
+/* "Fix Display" small button at top-right of Recent Analysis */
+[data-theme="dark"] .fix-display-btn,
+[data-theme="dark"] button.fix-display {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+  color: #0B1020 !important;
+  border: none !important;
+}
+
+/* -- Responsive theme toggle -- */
+@media (max-width: 640px) {
+  .theme-toggle-btn { width: 38px; height: 38px; margin: 0 6px; }
+  .theme-toggle-icon { font-size: 17px; }
+}

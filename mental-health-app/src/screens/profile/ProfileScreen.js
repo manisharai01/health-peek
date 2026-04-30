@@ -12,12 +12,18 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { authService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
 
 export default function ProfileScreen({ navigation }) {
   const { user, logout, updateUser } = useAuth();
-  const [name, setName] = useState(user?.name || '');
+  const { colors, gradients, mode, toggleTheme, isDark } = useTheme();
+  const styles = makeStyles(colors);
+
+  // Backend stores the display name as `full_name`. Read both for safety.
+  const displayName = user?.full_name || user?.name || '';
+  const [name, setName] = useState(displayName);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -25,8 +31,14 @@ export default function ProfileScreen({ navigation }) {
     if (!name.trim()) return;
     setSaving(true);
     try {
-      const updated = await authService.updateProfile({ name: name.trim() });
-      updateUser(updated);
+      // Backend expects `full_name` (UserUpdate schema).
+      const updated = await authService.updateProfile({ full_name: name.trim() });
+      updateUser({
+        ...user,
+        ...updated,
+        full_name: updated?.full_name ?? name.trim(),
+        name: updated?.full_name ?? name.trim(),
+      });
       setEditing(false);
       Alert.alert('Success', 'Profile updated.');
     } catch (err) {
@@ -47,7 +59,7 @@ export default function ProfileScreen({ navigation }) {
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       {/* Gradient Avatar Header */}
       <LinearGradient
-        colors={GRADIENTS.primary}
+        colors={gradients.primary}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.headerGradient}
@@ -58,12 +70,12 @@ export default function ProfileScreen({ navigation }) {
               <Image source={{ uri: user.profile_image }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>
-                {(user?.name || user?.email || '?')[0].toUpperCase()}
+                {(displayName || user?.email || '?')[0].toUpperCase()}
               </Text>
             )}
           </View>
         </View>
-        <Text style={styles.userName}>{user?.name || 'User'}</Text>
+        <Text style={styles.userName}>{displayName || 'User'}</Text>
         <Text style={styles.userEmail}>{user?.email || ''}</Text>
       </LinearGradient>
 
@@ -79,17 +91,21 @@ export default function ProfileScreen({ navigation }) {
               value={name}
               onChangeText={setName}
               placeholder="Your name"
+              placeholderTextColor={colors.textLight}
             />
             <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={saving}>
               <Text style={styles.saveBtnText}>{saving ? '...' : 'Save'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => { setEditing(false); setName(user?.name || ''); }}>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => { setEditing(false); setName(displayName); }}
+            >
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.infoRow}>
-            <Text style={styles.infoText}>{user?.name || 'Not set'}</Text>
+            <Text style={styles.infoText}>{displayName || 'Not set'}</Text>
             <TouchableOpacity onPress={() => setEditing(true)}>
               <Text style={styles.editLink}>Edit</Text>
             </TouchableOpacity>
@@ -109,32 +125,61 @@ export default function ProfileScreen({ navigation }) {
         )}
       </View>
 
+      {/* Appearance Card */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Appearance</Text>
+        <TouchableOpacity style={styles.themeRow} onPress={toggleTheme} activeOpacity={0.8}>
+          <View style={[styles.themeIconWrap, { backgroundColor: colors.primary + '22' }]}>
+            <MaterialIcons
+              name={isDark ? 'dark-mode' : 'light-mode'}
+              size={22}
+              color={colors.primary}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.menuText}>{isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+            <Text style={styles.themeSubtle}>
+              Tap to switch to {isDark ? 'light' : 'dark'} theme
+            </Text>
+          </View>
+          <View style={[
+            styles.toggleTrack,
+            { backgroundColor: isDark ? colors.primary : colors.border },
+          ]}>
+            <View style={[
+              styles.toggleThumb,
+              isDark && { transform: [{ translateX: 22 }] },
+            ]} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
       {/* Account Card */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account</Text>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('Export')}>
-          <MaterialIcons name="upload-file" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
+          <MaterialIcons name="upload-file" size={20} color={colors.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Export & Reports</Text>
-          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
+          <MaterialIcons name="chevron-right" size={22} color={colors.textLight} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('AnalysisHistory')}>
-          <MaterialIcons name="insert-chart-outlined" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
+          <MaterialIcons name="insert-chart-outlined" size={20} color={colors.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Analysis History</Text>
-          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
+          <MaterialIcons name="chevron-right" size={22} color={colors.textLight} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('ChatHistory')}>
-          <MaterialIcons name="chat-bubble-outline" size={20} color={COLORS.primary} style={styles.menuIconStyle} />
+        <TouchableOpacity style={[styles.menuItem, styles.menuItemLast]} onPress={() => navigation.navigate('ChatHistory')}>
+          <MaterialIcons name="chat-bubble-outline" size={20} color={colors.primary} style={styles.menuIconStyle} />
           <Text style={styles.menuText}>Chat Imports</Text>
-          <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
+          <MaterialIcons name="chevron-right" size={22} color={colors.textLight} />
         </TouchableOpacity>
         {user?.is_admin && (
           <TouchableOpacity
             style={[styles.menuItem, styles.adminMenuItem]}
             onPress={() => navigation.navigate('Blogs', { screen: 'AdminBlog' })}
           >
-            <MaterialIcons name="create" size={20} color="#7C3AED" style={styles.menuIconStyle} />
-            <Text style={[styles.menuText, styles.adminMenuText]}>Write Article</Text>
-            <MaterialIcons name="chevron-right" size={22} color={COLORS.textLight} />
+            <MaterialIcons name="create" size={20} color={colors.primary} style={styles.menuIconStyle} />
+            <Text style={[styles.menuText, { color: colors.primary }]}>Write Article</Text>
+            <MaterialIcons name="chevron-right" size={22} color={colors.textLight} />
           </TouchableOpacity>
         )}
       </View>
@@ -144,13 +189,13 @@ export default function ProfileScreen({ navigation }) {
         <Text style={styles.logoutText}>Sign Out</Text>
       </TouchableOpacity>
 
-      <Text style={styles.versionText}>Health Peek v1.0.0</Text>
+      <Text style={styles.versionText}>Health Peek v1.0.0 · {mode} mode</Text>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+const makeStyles = (colors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingBottom: 60 },
   headerGradient: {
     alignItems: 'center',
@@ -183,81 +228,118 @@ const styles = StyleSheet.create({
   avatarImage: { width: 96, height: 96, borderRadius: 48 },
   avatarText: { ...FONTS.bold, fontSize: 38, color: '#FFF' },
   userName: { ...FONTS.bold, fontSize: 24, color: '#FFF', letterSpacing: 0.3 },
-  userEmail: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
+  userEmail: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.card,
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...SHADOWS.medium,
   },
-  cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.text, marginBottom: SPACING.lg },
-  label: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
+  cardTitle: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: colors.text, marginBottom: SPACING.lg },
+  label: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: colors.textSecondary, marginTop: SPACING.md, marginBottom: SPACING.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  infoText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: COLORS.text },
-  editLink: { ...FONTS.semiBold, fontSize: FONTS.sizes.md, color: COLORS.primary },
+  infoText: { ...FONTS.regular, fontSize: FONTS.sizes.md, color: colors.text },
+  editLink: { ...FONTS.semiBold, fontSize: FONTS.sizes.md, color: colors.primary },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm },
   input: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     borderRadius: RADIUS.md,
     padding: SPACING.sm,
     ...FONTS.regular,
     fontSize: FONTS.sizes.md,
-    color: COLORS.text,
-    backgroundColor: COLORS.background,
+    color: colors.text,
+    backgroundColor: colors.background,
   },
   saveBtn: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: RADIUS.md,
     ...SHADOWS.small,
   },
   saveBtnText: { ...FONTS.bold, fontSize: FONTS.sizes.sm, color: '#FFF' },
-  cancelBtn: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  cancelBtnText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: COLORS.textSecondary },
+  cancelBtn: { paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm },
+  cancelBtnText: { ...FONTS.medium, fontSize: FONTS.sizes.sm, color: colors.textSecondary },
   adminBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: COLORS.primary + '15',
+    backgroundColor: colors.primary + '22',
     paddingHorizontal: SPACING.md,
     paddingVertical: 4,
     borderRadius: RADIUS.sm,
   },
-  adminBadgeText: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: COLORS.primary },
+  adminBadgeText: { ...FONTS.semiBold, fontSize: FONTS.sizes.sm, color: colors.primary },
+
+  themeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: SPACING.sm },
+  themeIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  themeSubtle: {
+    ...FONTS.regular,
+    fontSize: FONTS.sizes.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  toggleTrack: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    padding: 3,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFF',
+    ...SHADOWS.small,
+  },
+
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: SPACING.md + 2,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    borderBottomColor: colors.divider,
   },
+  menuItemLast: { borderBottomWidth: 0 },
   menuIconStyle: { marginRight: SPACING.md },
-  menuText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: COLORS.text, flex: 1 },
-  adminMenuItem: { backgroundColor: '#7C3AED08', borderRadius: RADIUS.md },
-  adminMenuText: { color: '#7C3AED' },
+  menuText: { ...FONTS.medium, fontSize: FONTS.sizes.md, color: colors.text, flex: 1 },
+  adminMenuItem: {
+    backgroundColor: colors.primary + '14',
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.sm,
+    marginTop: SPACING.sm,
+    borderBottomWidth: 0,
+  },
   logoutBtn: {
-    backgroundColor: COLORS.error + '08',
+    backgroundColor: colors.error + '12',
     paddingVertical: SPACING.lg,
     borderRadius: RADIUS.xl,
     alignItems: 'center',
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.md,
     borderWidth: 1.5,
-    borderColor: COLORS.error + '20',
+    borderColor: colors.error + '40',
   },
-  logoutText: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: COLORS.error },
+  logoutText: { ...FONTS.bold, fontSize: FONTS.sizes.lg, color: colors.error },
   versionText: {
     ...FONTS.regular,
     fontSize: FONTS.sizes.sm,
-    color: COLORS.textLight,
+    color: colors.textLight,
     textAlign: 'center',
     marginTop: SPACING.xxl,
     marginBottom: SPACING.lg,
+    textTransform: 'capitalize',
   },
 });

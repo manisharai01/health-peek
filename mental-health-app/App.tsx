@@ -19,6 +19,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { AnalysisProvider } from './src/context/AnalysisContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import AuthScreen from './src/screens/auth/AuthScreen';
 import AppNavigator from './src/navigation/AppNavigator';
 
@@ -172,6 +173,7 @@ const splashStyles = StyleSheet.create({
 
 function AppContent() {
   const { user, loading } = useAuth();
+  const { colors, mode } = useTheme();
 
   if (loading) {
     return <SplashScreen />;
@@ -181,9 +183,28 @@ function AppContent() {
     return <AuthScreen />;
   }
 
+  const navTheme = {
+    dark: mode === 'dark',
+    colors: {
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.primary,
+    },
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: '400' as const },
+      medium: { fontFamily: 'System', fontWeight: '500' as const },
+      bold: { fontFamily: 'System', fontWeight: '700' as const },
+      heavy: { fontFamily: 'System', fontWeight: '900' as const },
+    },
+  };
+
   return (
     <AnalysisProvider>
-      <NavigationContainer>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.statusBarBg} />
+      <NavigationContainer theme={navTheme}>
         <AppNavigator />
       </NavigationContainer>
     </AnalysisProvider>
@@ -194,9 +215,11 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

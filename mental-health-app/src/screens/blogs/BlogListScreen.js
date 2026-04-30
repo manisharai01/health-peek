@@ -12,9 +12,12 @@ import {
 import { blogService } from '../../services';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { EmptyState } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function BlogListScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const [blogs, setBlogs] = useState([]);
   const [rssArticles, setRssArticles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -210,7 +213,7 @@ export default function BlogListScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   tabContainer: {
     flexDirection: 'row',

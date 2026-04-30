@@ -11,11 +11,14 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { dashboardService } from '../../services';
 import { TimeRangeSelector, EmptyState, ErrorBanner } from '../../components/CommonComponents';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
 export default function DashboardScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const [stats, setStats] = useState(null);
   const [moodTrends, setMoodTrends] = useState(null);
   const [timeRange, setTimeRange] = useState('30d');
@@ -201,7 +204,7 @@ export default function DashboardScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   content: { padding: SPACING.lg, paddingBottom: SPACING.xxxl },
   wellbeingCard: {

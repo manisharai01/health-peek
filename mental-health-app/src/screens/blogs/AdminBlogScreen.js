@@ -15,7 +15,8 @@ import { pick, isCancel } from '@react-native-documents/picker';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import ReactNativeBlobUtil from 'react-native-blob-util';
 import { blogService } from '../../services';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const CATEGORIES = [
   'Mental Health', 'Mindfulness', 'Anxiety', 'Depression',
@@ -37,6 +38,8 @@ async function pickImageAsDataUri() {
 }
 
 export default function AdminBlogScreen({ navigation }) {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
@@ -286,7 +289,7 @@ export default function AdminBlogScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { paddingBottom: 60 },
 

@@ -12,7 +12,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS, FONTS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 import companionService from '../../services/companionService';
 
 const INITIAL_MESSAGE = {
@@ -23,6 +24,7 @@ const INITIAL_MESSAGE = {
 
 export default function CompanionScreen() {
   const [messages, setMessages] = useState([INITIAL_MESSAGE]);
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
@@ -85,6 +87,130 @@ export default function CompanionScreen() {
     );
   }, []);
 
+  const styles = React.useMemo(() => StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: COLORS.background,
+    },
+    flex: { flex: 1 },
+
+    // Header
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      gap: 12,
+    },
+    headerAvatar: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: 'rgba(255,255,255,0.25)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerAvatarEmoji: { fontSize: 20 },
+    headerTitle: { ...FONTS.bold, fontSize: 16, color: '#fff' },
+    headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
+
+    // Messages
+    messageList: {
+      padding: 16,
+      paddingBottom: 8,
+    },
+    messageRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      marginBottom: 10,
+      gap: 8,
+    },
+    messageRowUser: {
+      flexDirection: 'row-reverse',
+    },
+    avatarCircle: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: '#e0ece4',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+    },
+    avatarEmoji: { fontSize: 15 },
+    bubble: {
+      maxWidth: '72%',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 18,
+    },
+    bubbleAssistant: {
+      backgroundColor: COLORS.surface || '#fff',
+      borderBottomLeftRadius: 4,
+      ...SHADOWS.small,
+    },
+    bubbleUser: {
+      backgroundColor: COLORS.primary,
+      borderBottomRightRadius: 4,
+    },
+    typingBubble: {
+      paddingHorizontal: 18,
+      paddingVertical: 13,
+    },
+    bubbleText: {
+      ...FONTS.regular,
+      fontSize: 14.5,
+      lineHeight: 21,
+      color: COLORS.text,
+    },
+    bubbleTextUser: {
+      color: '#fff',
+    },
+
+    // Input bar
+    inputBar: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      backgroundColor: COLORS.surface || '#fff',
+      borderTopWidth: 1,
+      borderTopColor: '#e6ede8',
+      gap: 10,
+    },
+    input: {
+      flex: 1,
+      ...FONTS.regular,
+      fontSize: 14,
+      color: COLORS.text,
+      backgroundColor: COLORS.background,
+      borderRadius: 22,
+      paddingHorizontal: 16,
+      paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+      maxHeight: 100,
+      borderWidth: 1.5,
+      borderColor: '#cdddd2',
+    },
+    sendBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      overflow: 'hidden',
+    },
+    sendBtnDisabled: { opacity: 0.6 },
+    sendBtnGradient: {
+      width: 42,
+      height: 42,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sendIcon: {
+      color: '#fff',
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+  }), [COLORS, GRADIENTS]);
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
@@ -106,7 +232,7 @@ export default function CompanionScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         {/* Message list */}
         <FlatList
@@ -116,6 +242,7 @@ export default function CompanionScreen() {
           renderItem={renderMessage}
           contentContainerStyle={styles.messageList}
           onContentSizeChange={scrollToBottom}
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
             loading ? (
@@ -142,6 +269,7 @@ export default function CompanionScreen() {
             multiline
             maxLength={1000}
             editable={!loading}
+            onFocus={scrollToBottom}
             onSubmitEditing={sendMessage}
             blurOnSubmit={false}
           />
@@ -166,126 +294,4 @@ export default function CompanionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  flex: { flex: 1 },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  headerAvatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerAvatarEmoji: { fontSize: 20 },
-  headerTitle: { ...FONTS.bold, fontSize: 16, color: '#fff' },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
-
-  // Messages
-  messageList: {
-    padding: 16,
-    paddingBottom: 8,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: 10,
-    gap: 8,
-  },
-  messageRowUser: {
-    flexDirection: 'row-reverse',
-  },
-  avatarCircle: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#e0ece4',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  avatarEmoji: { fontSize: 15 },
-  bubble: {
-    maxWidth: '72%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  bubbleAssistant: {
-    backgroundColor: COLORS.surface || '#fff',
-    borderBottomLeftRadius: 4,
-    ...SHADOWS.small,
-  },
-  bubbleUser: {
-    backgroundColor: COLORS.primary,
-    borderBottomRightRadius: 4,
-  },
-  typingBubble: {
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-  },
-  bubbleText: {
-    ...FONTS.regular,
-    fontSize: 14.5,
-    lineHeight: 21,
-    color: COLORS.text,
-  },
-  bubbleTextUser: {
-    color: '#fff',
-  },
-
-  // Input bar
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: COLORS.surface || '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#e6ede8',
-    gap: 10,
-  },
-  input: {
-    flex: 1,
-    ...FONTS.regular,
-    fontSize: 14,
-    color: COLORS.text,
-    backgroundColor: COLORS.background,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
-    maxHeight: 100,
-    borderWidth: 1.5,
-    borderColor: '#cdddd2',
-  },
-  sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    overflow: 'hidden',
-  },
-  sendBtnDisabled: { opacity: 0.6 },
-  sendBtnGradient: {
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendIcon: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-});
+// styles are created inside the component with React.useMemo

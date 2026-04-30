@@ -4,7 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { COLORS, FONTS, SHADOWS, GRADIENTS } from '../theme';
+import { FONTS, SHADOWS } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 const LogoTitle = ({ title }) => (
   <View style={styles.headerLogoRow}>
@@ -35,23 +36,27 @@ import CompanionScreen from '../screens/companion/CompanionScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const screenOptions = {
-  headerStyle: {
-    backgroundColor: COLORS.surface,
-    elevation: 0,
-    shadowOpacity: 0,
-    borderBottomWidth: 0,
-  },
-  headerTintColor: COLORS.primary,
-  headerTitleStyle: { ...FONTS.bold, fontSize: 18, color: COLORS.text },
-  headerShadowVisible: false,
-  headerBackTitleVisible: false,
-  contentStyle: { backgroundColor: COLORS.background },
-  animation: 'slide_from_right',
-};
+function useScreenOptions() {
+  const { colors } = useTheme();
+  return {
+    headerStyle: {
+      backgroundColor: colors.surface,
+      elevation: 0,
+      shadowOpacity: 0,
+      borderBottomWidth: 0,
+    },
+    headerTintColor: colors.primary,
+    headerTitleStyle: { ...FONTS.bold, fontSize: 18, color: colors.text },
+    headerShadowVisible: false,
+    headerBackTitleVisible: false,
+    contentStyle: { backgroundColor: colors.background },
+    animation: 'slide_from_right',
+  };
+}
 
 // -- Analyze Stack --
 function AnalyzeStack() {
+  const screenOptions = useScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="AnalyzeMain" component={AnalyzeScreen} options={{ headerTitle: () => <LogoTitle title="Analyze" /> }} />
@@ -65,6 +70,7 @@ function AnalyzeStack() {
 
 // -- Dashboard Stack --
 function DashboardStack() {
+  const screenOptions = useScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="DashboardMain" component={DashboardScreen} options={{ headerTitle: () => <LogoTitle title="Dashboard" /> }} />
@@ -75,6 +81,7 @@ function DashboardStack() {
 
 // -- Blog Stack --
 function BlogStack() {
+  const screenOptions = useScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="BlogList" component={BlogListScreen} options={{ headerTitle: () => <LogoTitle title="Articles" /> }} />
@@ -86,6 +93,7 @@ function BlogStack() {
 
 // -- More Stack (Profile, Export) --
 function MoreStack() {
+  const screenOptions = useScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerTitle: () => <LogoTitle title="Profile" /> }} />
@@ -99,6 +107,7 @@ function MoreStack() {
 
 // -- Companion Stack --
 function CompanionStack() {
+  const screenOptions = useScreenOptions();
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
@@ -119,13 +128,14 @@ const TAB_ICONS = {
 };
 
 function TabIcon({ routeName, focused }) {
+  const { colors, gradients } = useTheme();
   const iconName = TAB_ICONS[routeName] || 'circle';
-  const color = focused ? COLORS.primary : COLORS.textLight;
+  const color = focused ? colors.primary : colors.textLight;
   return (
     <View style={styles.tabIconContainer}>
       {focused && (
         <LinearGradient
-          colors={GRADIENTS.primary}
+          colors={gradients.primary}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.activeIndicator}
@@ -140,15 +150,18 @@ function TabIcon({ routeName, focused }) {
 
 // -- Main Tab Navigator --
 export default function AppNavigator() {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.textLight,
+        tabBarHideOnKeyboard: true,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textLight,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
+          backgroundColor: colors.surface,
           borderTopWidth: 0,
+          borderTopColor: colors.border,
           height: Platform.OS === 'ios' ? 88 : 72,
           paddingBottom: Platform.OS === 'ios' ? 28 : 12,
           paddingTop: 8,
@@ -185,7 +198,6 @@ const styles = StyleSheet.create({
   headerLogoText: {
     ...FONTS.bold,
     fontSize: 18,
-    color: COLORS.text,
   },
   tabIconContainer: {
     alignItems: 'center',
@@ -213,6 +225,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.primary + '12',
+    backgroundColor: 'rgba(139, 92, 246, 0.12)',
   },
 });

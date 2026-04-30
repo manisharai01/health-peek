@@ -13,7 +13,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { dashboardService } from '../../services';
 import { TimeRangeSelector } from '../../components/CommonComponents';
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, GRADIENTS } from '../../theme';
+import { FONTS, SPACING, RADIUS, SHADOWS } from '../../theme';
+import { useTheme } from '../../context/ThemeContext';
 
 const REPORT_TYPES = [
   {
@@ -45,6 +46,8 @@ const EXPORT_FORMATS = [
 ];
 
 export default function ExportScreen() {
+  const { colors: COLORS, gradients: GRADIENTS } = useTheme();
+  const styles = React.useMemo(() => makeStyles(COLORS, GRADIENTS), [COLORS, GRADIENTS]);
   const [timeRange, setTimeRange] = useState('30d');
   const [downloading, setDownloading] = useState(null);
   const [exporting, setExporting] = useState(null);
@@ -145,7 +148,7 @@ export default function ExportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (COLORS, GRADIENTS) => StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   scroll: { padding: SPACING.lg, paddingBottom: 60 },
   headingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
