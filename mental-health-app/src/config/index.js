@@ -1,11 +1,14 @@
 import { Platform } from 'react-native';
 
+const PROD_API_URL = 'https://health-peek-2.onrender.com';
 const DEV_API_URL = Platform.OS === 'android' 
   ? 'http://10.83.170.174:8000'  // Real Android device via ADB (machine's LAN IP)
   : 'http://localhost:8000'; // iOS simulator
 
+const API_URL = __DEV__ ? DEV_API_URL : PROD_API_URL;
+
 export const CONFIG = {
-  API_URL: DEV_API_URL,
+  API_URL,
   APP_VERSION: '1.0.0',
   TOKEN_KEY: 'authToken',
   USER_KEY: 'user',
