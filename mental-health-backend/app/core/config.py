@@ -23,7 +23,9 @@ class Settings:
     CORS_ORIGINS = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "https://localhost:3000"
+        "https://localhost:3000",
+        os.getenv("FRONTEND_URL", ""),           # Production frontend URL (Vercel)
+        os.getenv("FRONTEND_REDIRECT_URI", ""),
     ]
     
     # Server Configuration
