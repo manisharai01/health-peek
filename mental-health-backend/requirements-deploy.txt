@@ -1,3 +1,6 @@
+# PyTorch CPU-only wheel index (must be first)
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # FastAPI and web framework dependencies
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -19,9 +22,9 @@ regex==2023.10.3
 # Multilingual language detection (lightweight, no GPU required)
 langdetect==1.0.9
 
-# Lightweight sentiment (no GPU required) - replaces torch/transformers on free tier
+# Lightweight sentiment (no GPU required) - CPU-only torch for free tier
 transformers==4.35.2
-torch==2.1.0+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.0+cpu
 tokenizers==0.15.0
 numpy>=1.24.3
 
