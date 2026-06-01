@@ -24,7 +24,7 @@ langdetect==1.0.9
 
 # Lightweight sentiment (no GPU required) - CPU-only torch for free tier
 transformers==4.35.2
-torch==2.2.0+cpu
+torch==2.9.0+cpu
 tokenizers==0.15.0
 numpy>=1.24.3
 
