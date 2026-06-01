@@ -23,9 +23,9 @@ regex==2023.10.3
 langdetect==1.0.9
 
 # Lightweight sentiment (no GPU required) - CPU-only torch for free tier
-transformers==4.35.2
-torch==2.9.0+cpu
-tokenizers==0.15.0
+transformers>=4.35.2
+torch>=2.9.0
+tokenizers>=0.15.0
 numpy>=1.24.3
 
 # LLM via Groq API (cloud-based, no local model needed)
