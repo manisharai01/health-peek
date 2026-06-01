@@ -26,3 +26,5 @@ services:
         value: "true"
       - key: DISABLE_VOICE
         value: "true"         # Disable whisper on free tier
+      - key: DISABLE_AI_MODELS
+        value: "true"         # Skip HuggingFace model download on free tier (512MB RAM limit)
