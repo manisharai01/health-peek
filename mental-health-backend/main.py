@@ -30,14 +30,16 @@ async def lifespan(app: FastAPI):
         await connect_to_mongo()
         logger.info("Database connected successfully")
         
-        # Initialize AI models
-        await sentiment_service.initialize()
-        logger.info("AI models initialized")
-        
-        # Initialize voice/whisper model
-        from app.services.voice_service import voice_service
-        await voice_service.initialize()
-        logger.info("Voice (Whisper) model initialized")
+        # Initialize AI models (skip on free tier to avoid OOM - set DISABLE_AI_MODELS=true)
+        if os.getenv("DISABLE_AI_MODELS", "false").lower() != "true":
+            await sentiment_service.initialize()
+            logger.info("AI models initialized")
+            
+            from app.services.voice_service import voice_service
+            await voice_service.initialize()
+            logger.info("Voice (Whisper) model initialized")
+        else:
+            logger.info("AI model loading skipped (DISABLE_AI_MODELS=true) — using lexicon/Groq fallback")
         
     except Exception as e:
         logger.error(f"Startup failed: {e}")
