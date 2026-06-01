@@ -32,5 +32,11 @@ numpy>=1.24.3
 # LLM via Groq API (cloud-based, no local model needed)
 groq>=0.4.0
 
+# PDF report generation
+reportlab>=4.0.0
+
+# Chart/graph generation
+matplotlib>=3.7.0
+
 # NOTE: openai-whisper and ffmpeg-python removed for free tier (too heavy)
 # Voice analysis will be disabled on free tier
