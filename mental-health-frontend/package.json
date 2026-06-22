@@ -2,7 +2,7 @@
   "name": "mental-health-frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://manishatfm.github.io/health-peek",
+  "homepage": "https://manisharai01.github.io/health-peek",
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
     "@testing-library/dom": "^10.4.1",
