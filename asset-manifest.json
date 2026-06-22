@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/health-peek/static/css/main.f94a5439.css",
-    "main.js": "/health-peek/static/js/main.b79b4b37.js",
+    "main.js": "/health-peek/static/js/main.a99179fc.js",
     "index.html": "/health-peek/index.html",
     "main.f94a5439.css.map": "/health-peek/static/css/main.f94a5439.css.map",
-    "main.b79b4b37.js.map": "/health-peek/static/js/main.b79b4b37.js.map"
+    "main.a99179fc.js.map": "/health-peek/static/js/main.a99179fc.js.map"
   },
   "entrypoints": [
     "static/css/main.f94a5439.css",
-    "static/js/main.b79b4b37.js"
+    "static/js/main.a99179fc.js"
   ]
 }
