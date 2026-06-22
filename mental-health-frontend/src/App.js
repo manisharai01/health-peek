@@ -227,7 +227,7 @@ function AppContent() {
   const renderHeader = () => (
     <header className="app-header">
       <div className="header-left">
-        <img src="/assets/navbar-logo-final.png" alt="Health Peek" className="navbar-logo-final" />
+        <img src={`${process.env.PUBLIC_URL}/assets/navbar-logo-final.png`} alt="Health Peek" className="navbar-logo-final" />
       </div>
       <div className="header-right">
         <div className="user-profile" onClick={() => setShowProfileMenu(!showProfileMenu)}>
@@ -235,7 +235,7 @@ function AppContent() {
             {profileImage ? (
               <img src={profileImage} alt="Profile" className="profile-image" />
             ) : (
-              <img src="/assets/userprofile.png" alt="Profile" className="profile-image" />
+              <img src={`${process.env.PUBLIC_URL}/assets/userprofile.png`} alt="Profile" className="profile-image" />
             )}
             <input
               type="file"
@@ -269,7 +269,7 @@ function AppContent() {
           onClick={handleSignOutClick}
           title="Sign Out"
         >
-          <img src="/assets/signout.png" alt="Sign Out" className="sign-out-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/signout.png`} alt="Sign Out" className="sign-out-icon" />
         </button>
       </div>
     </header>
@@ -282,28 +282,28 @@ function AppContent() {
           className={activeSection === 'analyze' ? 'nav-btn active' : 'nav-btn'}
           onClick={() => setActiveSection('analyze')}
         >
-          <img src="/assets/analyze.png" alt="Analyze" className="nav-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/analyze.png`} alt="Analyze" className="nav-icon" />
           Analyze Chat
         </button>
         <button 
           className={activeSection === 'dashboard' ? 'nav-btn active' : 'nav-btn'}
           onClick={() => setActiveSection('dashboard')}
         >
-          <img src="/assets/dashboard.png" alt="Dashboard" className="nav-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/dashboard.png`} alt="Dashboard" className="nav-icon" />
           Dashboard
         </button>
         <button 
           className={activeSection === 'trends' ? 'nav-btn active' : 'nav-btn'}
           onClick={() => setActiveSection('trends')}
         >
-          <img src="/assets/moodtrend.png" alt="Mood Trends" className="nav-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/moodtrend.png`} alt="Mood Trends" className="nav-icon" />
           Mood Trends & Patterns
         </button>
         <button 
           className={activeSection === 'suggestions' ? 'nav-btn active' : 'nav-btn'}
           onClick={() => setActiveSection('suggestions')}
         >
-          <img src="/assets/recommendation.png" alt="Recommendations" className="nav-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/recommendation.png`} alt="Recommendations" className="nav-icon" />
           Personalized Recommendations
         </button>
         <button 
@@ -324,7 +324,7 @@ function AppContent() {
           className={activeSection === 'export' ? 'nav-btn active' : 'nav-btn'}
           onClick={() => setActiveSection('export')}
         >
-          <img src="/assets/exportreport.png" alt="Export" className="nav-icon" />
+          <img src={`${process.env.PUBLIC_URL}/assets/exportreport.png`} alt="Export" className="nav-icon" />
           Export & Reports
         </button>
       </div>
@@ -654,7 +654,7 @@ function App() {
         <div className="login-split-container">
           <div className="login-left-panel">
             <div className="login-branding">
-              <img src="/assets/logo.png" alt="Mental Health Analyzer" className="login-logo" />
+              <img src={`${process.env.PUBLIC_URL}/assets/logo.png`} alt="Mental Health Analyzer" className="login-logo" />
               <h1 className="login-title">Health Peek</h1>
               <p className="login-subtitle">Supporting your journey with care and understanding</p>
               <div className="login-features">
