@@ -47,5 +47,7 @@ class Settings:
     # Chat import limit (characters). Larger chats exhaust the 512 MB free-tier
     # instance and the stored chat exceeds MongoDB's 16 MB document limit (~9 MB of text).
     MAX_CHAT_IMPORT_CHARS = int(os.getenv("MAX_CHAT_IMPORT_CHARS", "2000000"))
+    # Chats of any size can be imported in parts (/analysis/import-chat/start); this caps one part
+    MAX_CHAT_CHUNK_CHARS = int(os.getenv("MAX_CHAT_CHUNK_CHARS", "1000000"))
 
 settings = Settings()

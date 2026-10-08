@@ -108,6 +108,15 @@ class ChatImportRequest(BaseModel):
     current_user_name: Optional[str] = None  # To identify "you" vs "other"
     language: Optional[str] = None           # Force language: 'hi', 'hinglish', 'es', …
 
+class ChatImportStartRequest(BaseModel):
+    format_type: Optional[str] = None
+    current_user_name: Optional[str] = None
+    language: Optional[str] = None
+
+class ChatImportChunkRequest(BaseModel):
+    index: int = Field(..., ge=0)            # parts must be uploaded in order, starting at 0
+    content: str = Field(..., min_length=1)
+
 class ChatMessage(BaseModel):
     timestamp: datetime
     sender: str

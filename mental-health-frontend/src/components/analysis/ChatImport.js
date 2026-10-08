@@ -32,14 +32,20 @@ const LANGUAGE_OPTIONS = [
   { code: 'pl',  label: '🇵🇱 Polish',     group: 'International' },
 ];
 
-// Must match MAX_CHAT_IMPORT_CHARS on the backend (larger imports crash the free-tier server)
-const MAX_IMPORT_CHARS = 2000000;
+// Larger uploaded files aren't shown in the textarea (rendering megabytes of text freezes the page)
+const PREVIEW_MAX_CHARS = 100000;
 
-// Chat exports are chronological, so keep the most recent messages, cut at a line boundary
-const keepMostRecent = (text) => {
-  if (text.length <= MAX_IMPORT_CHARS) return text;
-  const tail = text.slice(-MAX_IMPORT_CHARS);
-  return tail.slice(tail.indexOf('\n') + 1);
+const formatFileSize = (bytes) =>
+  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(2)} KB`;
+
+const progressMessage = (progress) => {
+  if (!progress) return 'Analyzing your conversation...';
+  if (progress.stage === 'upload') {
+    return progress.total > 1 ? `Uploading part ${progress.done + 1} of ${progress.total}...` : 'Uploading your chat...';
+  }
+  return progress.total > 0
+    ? `Analyzing ${progress.done.toLocaleString()} of ${progress.total.toLocaleString()} messages...`
+    : 'Analyzing your conversation...';
 };
 
 const ChatImport = ({ onImportSuccess }) => {
@@ -51,6 +57,9 @@ const ChatImport = ({ onImportSuccess }) => {
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
   const [fileInfo, setFileInfo] = useState(null);
+  const [progress, setProgress] = useState(null);
+
+  const isLargeFile = fileInfo && chatContent.length > PREVIEW_MAX_CHARS;
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -58,21 +67,12 @@ const ChatImport = ({ onImportSuccess }) => {
 
     setFileInfo({
       name: file.name,
-      size: (file.size / 1024).toFixed(2) + ' KB'
+      size: formatFileSize(file.size)
     });
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const text = event.target.result;
-      const kept = keepMostRecent(text);
-      if (kept.length < text.length) {
-        const percent = Math.max(1, Math.round((kept.length / text.length) * 100));
-        setFileInfo(prev => ({
-          ...prev,
-          notice: `This chat is too large to import in full, so only the most recent ~${percent}% of it will be analyzed.`
-        }));
-      }
-      setChatContent(kept);
+      setChatContent(event.target.result);
     };
     reader.readAsText(file);
   };
@@ -90,22 +90,18 @@ const ChatImport = ({ onImportSuccess }) => {
       return;
     }
 
-    if (chatContent.length > MAX_IMPORT_CHARS) {
-      setError(`Chat is too long to import (${chatContent.length.toLocaleString()} characters). Please keep it under ${MAX_IMPORT_CHARS.toLocaleString()} characters, e.g. only recent months.`);
-      return;
-    }
-
     setIsAnalyzing(true);
     setError(null);
     setAnalysis(null);
+    setProgress(null);
 
     try {
-      const result = await analysisService.importChat({
-        content: chatContent,
+      // Uploaded in parts and analyzed in the background, so chats of any size work
+      const result = await analysisService.importChatInParts(chatContent, {
         format_type: formatType || null,
         current_user_name: userName.trim() || null,
         language: language || null,          // null = auto-detect
-      });
+      }, setProgress);
 
       setAnalysis(result);
       
@@ -171,9 +167,6 @@ const ChatImport = ({ onImportSuccess }) => {
                   <span className="file-size">{fileInfo.size}</span>
                 </div>
               )}
-              {fileInfo?.notice && (
-                <p className="file-notice">⚠️ {fileInfo.notice}</p>
-              )}
             </div>
 
             <div className="divider">
@@ -183,9 +176,9 @@ const ChatImport = ({ onImportSuccess }) => {
             <div className="input-group">
               <label>Paste Chat Content:</label>
               <textarea
-                value={chatContent}
+                value={isLargeFile ? '' : chatContent}
                 onChange={handleTextInput}
-                placeholder={`Paste your chat history here...
+                placeholder={isLargeFile ? `${fileInfo.name} is loaded (too large to preview). Type or paste here to use text instead.` : `Paste your chat history here...
 
 Examples:
 • WhatsApp: 12/31/2023, 10:30 PM - John: Hello!
@@ -194,7 +187,7 @@ Examples:
                 rows={12}
                 disabled={isAnalyzing}
               />
-              <div className="char-count">{chatContent.length} characters</div>
+              <div className="char-count">{chatContent.length.toLocaleString()} characters</div>
             </div>
 
             <div className="options-row">
@@ -272,7 +265,7 @@ Examples:
 
       {isAnalyzing && (
         <div className="analysis-loading">
-          <LoadingSpinner message="Analyzing your conversation..." />
+          <LoadingSpinner message={progressMessage(progress)} />
         </div>
       )}
 

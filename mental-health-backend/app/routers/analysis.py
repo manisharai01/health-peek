@@ -1,13 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from typing import List
+from typing import Dict, List, Optional
+from bson import ObjectId
+from pymongo import ReturnDocument
+import emoji
 from ..models.schemas import (
     MessageRequest, BulkMessageRequest, AnalysisResponse, BulkAnalysisResponse,
-    ChatImportRequest, ChatAnalysisResponse
+    ChatImportRequest, ChatAnalysisResponse, ChatImportStartRequest, ChatImportChunkRequest
 )
 from ..services.sentiment_service import sentiment_service
 from ..services.analysis_service import analysis_service
 from ..services.chat_parser import chat_parser
-from ..services.chat_analyzer import chat_analyzer
+from ..services.chat_analyzer import chat_analyzer, ConversationAccumulator
 from ..services.language_service import language_service
 from ..core.security import get_current_user
 from ..core.database import get_database
@@ -306,6 +309,60 @@ async def delete_analyses_by_date(
             detail=f"Failed to delete analyses by date: {str(e)}"
         )
 
+# ── Chat import helpers ───────────────────────────────────────────────────────
+
+async def _message_history_doc(msg: dict, user_id: str, language: str, chat_analysis_id: str) -> Optional[dict]:
+    """
+    Score one of the user's own chat messages for analysis_history, which feeds the dashboard,
+    mood trends, recommendations and reports. Returns None for short or low-confidence neutral messages.
+    """
+    # Skip messages with less than 3 words (like "ok", "yes", "k") unless they have emojis or strong sentiment
+    message_text = msg['message'].strip()
+    if len(message_text.split()) < 3:
+        has_emojis = len(emoji.emoji_list(message_text)) > 0
+        has_strong_punctuation = ('!' in message_text or '?' in message_text * 2)
+        if not has_emojis and not has_strong_punctuation:
+            return None
+
+    sentiment, confidence, emotions = await sentiment_service.analyze_sentiment(msg['message'], language=language)
+
+    # Skip if confidence is too low (likely neutral filler messages)
+    if sentiment == "neutral" and confidence < 0.6:
+        return None
+
+    emoji_sentiment, emoji_confidence = sentiment_service.analyze_emoji_sentiment(msg['message'])
+    return {
+        "user_id": user_id,
+        "message": msg['message'],
+        "sentiment": sentiment,
+        "confidence": confidence,
+        "emotions": emotions,
+        "emoji_analysis": {"sentiment": emoji_sentiment, "confidence": emoji_confidence} if emoji_sentiment != "neutral" else None,
+        "timestamp": msg['timestamp'],  # Use original message timestamp
+        "created_at": datetime.utcnow(),
+        "source": "bulk_import",
+        "chat_analysis_id": chat_analysis_id,  # lets deleting the chat import remove these too
+    }
+
+
+def _chat_analysis_response(analysis_id: str, analysis: dict, total_messages: int, format_detected: str) -> ChatAnalysisResponse:
+    return ChatAnalysisResponse(
+        analysis_id=analysis_id,
+        participants=analysis['participants'],
+        basic_stats=analysis['basic_stats'],
+        messaging_patterns=analysis['messaging_patterns'],
+        engagement_metrics=analysis['engagement_metrics'],
+        sentiment_analysis=analysis['sentiment_analysis'],
+        red_flags=analysis['red_flags'],
+        emoji_stats=analysis['emoji_stats'],
+        time_analysis=analysis['time_analysis'],
+        language_info=analysis.get('language_info', {'detected_language': 'en', 'language_name': 'English', 'native_name': 'English', 'region': 'international', 'script': 'latin'}),
+        conversation_period=analysis['conversation_period'],
+        total_messages_analyzed=total_messages,
+        format_detected=format_detected
+    )
+
+
 @router.post("/import-chat", response_model=ChatAnalysisResponse)
 async def import_and_analyze_chat(
     request: ChatImportRequest,
@@ -385,7 +442,6 @@ async def import_and_analyze_chat(
         skipped_short_messages = 0
         
         # Identify the current user's messages for sentiment analysis
-        current_user_identifier = request.current_user_name
         user_participants = []
         
         # Find which participant is "you"
@@ -401,6 +457,7 @@ async def import_and_analyze_chat(
             logger.warning(f"💡 User should provide 'current_user_name' parameter to save only their messages")
         
         # Process each message and save individual sentiment analyses
+        detected_lang = analysis.get('language_info', {}).get('detected_language')
         for idx, msg in enumerate(messages):
             # Sentiment scoring is synchronous; yield regularly so other requests aren't starved
             if idx % 200 == 0:
@@ -408,93 +465,27 @@ async def import_and_analyze_chat(
 
             # ONLY save messages from the current user (when identified)
             # Never save other person's messages to prevent incorrect statistics
-            should_save = False
-            if user_participants and msg['sender'] in user_participants:
-                should_save = True
-            elif not user_participants:
-                # Don't save if user didn't identify themselves
+            if not (user_participants and msg['sender'] in user_participants):
                 skipped_other_person += 1
                 continue
-            else:
-                # This is the other person's message - skip it
-                skipped_other_person += 1
+
+            history_doc = await _message_history_doc(msg, current_user["user_id"], detected_lang, analysis_id)
+            if history_doc is None:
+                skipped_short_messages += 1
                 continue
-            
-            if should_save:
-                # Skip very short messages that are likely neutral (like "ok", "yes", "k")
-                message_text = msg['message'].strip()
-                word_count = len(message_text.split())
-                
-                # Skip messages with less than 3 words unless they have emojis or strong sentiment
-                if word_count < 3:
-                    # Check if message has emojis or punctuation indicating sentiment
-                    import emoji
-                    has_emojis = len(emoji.emoji_list(message_text)) > 0
-                    has_strong_punctuation = ('!' in message_text or '?' in message_text * 2)
-                    
-                    if not has_emojis and not has_strong_punctuation:
-                        skipped_short_messages += 1
-                        continue
-                
-                # Analyze individual message sentiment (use detected language)
-                detected_lang = analysis.get('language_info', {}).get('detected_language')
-                sentiment, confidence, emotions = await sentiment_service.analyze_sentiment(
-                    msg['message'], language=detected_lang
-                )
-                
-                # Skip if confidence is too low (likely neutral filler messages)
-                if sentiment == "neutral" and confidence < 0.6:
-                    skipped_short_messages += 1
-                    continue
-                
-                # Get emoji analysis
-                emoji_sentiment, emoji_confidence = sentiment_service.analyze_emoji_sentiment(msg['message'])
-                emoji_analysis = {
-                    "sentiment": emoji_sentiment,
-                    "confidence": emoji_confidence
-                } if emoji_sentiment != "neutral" else None
-                
-                # Save to analysis_history collection with original timestamp
-                try:
-                    # Use message timestamp instead of current time
-                    analysis_doc = {
-                        "user_id": current_user["user_id"],
-                        "message": msg['message'],
-                        "sentiment": sentiment,
-                        "confidence": confidence,
-                        "emotions": emotions,
-                        "emoji_analysis": emoji_analysis,
-                        "timestamp": msg['timestamp'],  # Use original message timestamp
-                        "created_at": datetime.utcnow(),
-                        "source": "bulk_import"  # Tag for tracking
-                    }
-                    
-                    db = get_database()
-                    await db.analysis_history.insert_one(analysis_doc)
-                    saved_individual_count += 1
-                except Exception as save_error:
-                    logger.warning(f"Failed to save individual message analysis: {save_error}")
-        
+
+            try:
+                await db.analysis_history.insert_one(history_doc)
+                saved_individual_count += 1
+            except Exception as save_error:
+                logger.warning(f"Failed to save individual message analysis: {save_error}")
+
         logger.info(f"✅ Saved {saved_individual_count}/{len(messages)} individual message analyses to analysis_history")
         logger.info(f"📊 Skipped {skipped_other_person} messages from other person(s)")
         logger.info(f"📊 Skipped {skipped_short_messages} short/low-confidence neutral messages")
         logger.info(f"🎯 Bulk import data will now affect dashboard, mood trends, recommendations, and reports!")
-        
-        return ChatAnalysisResponse(
-            analysis_id=analysis_id,
-            participants=analysis['participants'],
-            basic_stats=analysis['basic_stats'],
-            messaging_patterns=analysis['messaging_patterns'],
-            engagement_metrics=analysis['engagement_metrics'],
-            sentiment_analysis=analysis['sentiment_analysis'],
-            red_flags=analysis['red_flags'],
-            emoji_stats=analysis['emoji_stats'],
-            time_analysis=analysis['time_analysis'],
-            language_info=analysis.get('language_info', {'detected_language': 'en', 'language_name': 'English', 'native_name': 'English', 'region': 'international', 'script': 'latin'}),
-            conversation_period=analysis['conversation_period'],
-            total_messages_analyzed=len(messages),
-            format_detected=detected_format
-        )
+
+        return _chat_analysis_response(analysis_id, analysis, len(messages), detected_format)
     
     except HTTPException:
         raise
@@ -504,6 +495,276 @@ async def import_and_analyze_chat(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to import and analyze chat: {str(e)}"
         )
+
+# ── Chunked chat import (chats of any size) ───────────────────────────────────
+# The browser uploads a chat in parts; each part is parsed and staged in chat_import_messages.
+# A background job then streams the staged messages in timestamp order through
+# ConversationAccumulator, so server memory stays bounded however large the chat is.
+# The browser polls GET /import-chat/{id} until the job is done.
+
+IMPORT_SORT = [("timestamp", 1), ("chunk", 1), ("seq", 1)]  # same order as a stable sort by timestamp
+IMPORT_BATCH_SIZE = 2000
+IMPORT_MAX_ATTEMPTS = 3
+_import_jobs: Dict[str, asyncio.Task] = {}
+
+
+class ChatImportError(Exception):
+    """An import problem whose message can be shown to the user as-is."""
+
+
+async def _get_import_session(db, import_id: str, user_id: str) -> dict:
+    session = None
+    if ObjectId.is_valid(import_id):
+        session = await db.chat_imports.find_one({"_id": ObjectId(import_id), "user_id": user_id})
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat import not found")
+    return session
+
+
+def _ensure_import_job(import_id: str, user_id: str) -> None:
+    """Start the analysis job unless it is already running in this process."""
+    if import_id in _import_jobs:
+        return
+    task = asyncio.create_task(_run_import_job(import_id, user_id))
+    _import_jobs[import_id] = task
+    task.add_done_callback(lambda _: _import_jobs.pop(import_id, None))
+
+
+async def _run_import_job(import_id: str, user_id: str) -> None:
+    db = get_database()
+    session_id = ObjectId(import_id)
+    try:
+        session = await db.chat_imports.find_one_and_update(
+            {"_id": session_id}, {"$inc": {"attempts": 1}, "$set": {"processed": 0}}, return_document=ReturnDocument.AFTER
+        )
+        if session.get("attempts", 1) > IMPORT_MAX_ATTEMPTS:
+            raise ChatImportError("The analysis was interrupted too many times. Please try the import again.")
+
+        # A fixed id for the chat analysis lets a restarted job replace a partial earlier attempt
+        chat_analysis_id = session.get("chat_analysis_id") or str(ObjectId())
+        await db.chat_imports.update_one({"_id": session_id}, {"$set": {"chat_analysis_id": chat_analysis_id}})
+        await db.analysis_history.delete_many({"user_id": user_id, "chat_analysis_id": chat_analysis_id})
+
+        query = {"import_id": import_id}
+        total = await db.chat_import_messages.count_documents(query)
+        if total == 0:
+            raise ChatImportError("No messages could be parsed from the content. Please check the format.")
+        logger.info(f"Analyzing chat import {import_id}: {total:,} messages")
+
+        # Dominant language from the earliest messages, as analyze_conversation() does
+        language = session.get("language")
+        if not (language and language_service.is_supported(language)):
+            sample = []
+            async for doc in db.chat_import_messages.find(query, {"_id": 0, "message": 1}).sort(IMPORT_SORT).batch_size(100):
+                if len(doc["message"].strip()) > 10:
+                    sample.append(doc)
+                if len(sample) >= 30:
+                    break
+            language = await asyncio.to_thread(chat_analyzer._detect_conversation_language, sample)
+
+        user_name = session.get("current_user_name")
+        accumulator = ConversationAccumulator(total, user_name, language)
+        counts = {"saved": 0, "skipped_other": 0, "skipped_short": 0}
+
+        async def process(batch: List[dict]) -> None:
+            await asyncio.to_thread(accumulator.add_many, batch)
+            history_docs = []
+            for idx, msg in enumerate(batch):
+                # Sentiment scoring is synchronous; yield regularly so other requests aren't starved
+                if idx % 200 == 0:
+                    await asyncio.sleep(0)
+                # ONLY save the current user's own messages
+                if user_name is None or msg["sender"] != user_name:
+                    counts["skipped_other"] += 1
+                    continue
+                history_doc = await _message_history_doc(msg, user_id, language, chat_analysis_id)
+                if history_doc is None:
+                    counts["skipped_short"] += 1
+                    continue
+                history_docs.append(history_doc)
+            if history_docs:
+                await db.analysis_history.insert_many(history_docs)
+                counts["saved"] += len(history_docs)
+            await db.chat_imports.update_one(
+                {"_id": session_id}, {"$set": {"processed": accumulator.count, "updated_at": datetime.utcnow()}}
+            )
+
+        batch = []
+        projection = {"_id": 0, "timestamp": 1, "sender": 1, "message": 1}
+        async for doc in db.chat_import_messages.find(query, projection).sort(IMPORT_SORT).batch_size(IMPORT_BATCH_SIZE):
+            batch.append(doc)
+            if len(batch) >= IMPORT_BATCH_SIZE:
+                await process(batch)
+                batch = []
+        if batch:
+            await process(batch)
+
+        analysis = await asyncio.to_thread(accumulator.result)
+        now = datetime.utcnow()
+        await db.chat_analyses.replace_one({"_id": ObjectId(chat_analysis_id)}, {
+            "user_id": user_id,
+            "format_detected": session.get("detected_format") or "unknown",
+            "total_messages": total,
+            "messages_count": total,
+            "analysis": analysis,
+            "created_at": now,
+            "updated_at": now
+        }, upsert=True)
+        await db.chat_imports.update_one({"_id": session_id}, {"$set": {
+            "status": "done", "processed": total, "saved_messages": counts["saved"], "updated_at": now
+        }})
+        # The staged copy of the chat is no longer needed
+        await db.chat_import_messages.delete_many(query)
+
+        logger.info(f"✅ Chat import {import_id} analyzed: {total:,} messages, saved {counts['saved']:,} to analysis_history "
+                    f"(skipped {counts['skipped_other']:,} from others, {counts['skipped_short']:,} short/low-confidence)")
+    except Exception as e:
+        logger.error(f"Chat import {import_id} failed: {e}", exc_info=not isinstance(e, ChatImportError))
+        error = str(e) if isinstance(e, ChatImportError) else f"Failed to analyze chat: {e}"
+        try:
+            await db.chat_imports.update_one({"_id": session_id}, {"$set": {
+                "status": "failed", "error": error, "updated_at": datetime.utcnow()
+            }})
+        except Exception:
+            # Status stays 'processing'; the next status poll restarts the job (up to IMPORT_MAX_ATTEMPTS)
+            logger.exception(f"Could not record failure of chat import {import_id}")
+
+
+@router.post("/import-chat/start")
+async def start_chat_import(
+    request: ChatImportStartRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Begin a chat import of any size; upload it with /import-chat/{id}/chunk, then call /finish"""
+    db = get_database()
+    user_id = current_user["user_id"]
+    now = datetime.utcnow()
+
+    # Clean up this user's abandoned uploads (closed tab, failed analysis) older than a day
+    stale = await db.chat_imports.find({
+        "user_id": user_id, "status": {"$in": ["uploading", "failed"]}, "updated_at": {"$lt": now - timedelta(days=1)}
+    }, {"_id": 1}).to_list(length=None)
+    for old in stale:
+        await db.chat_import_messages.delete_many({"import_id": str(old["_id"])})
+        await db.chat_imports.delete_one({"_id": old["_id"]})
+
+    await db.chat_import_messages.create_index([("import_id", 1)] + IMPORT_SORT)
+    result = await db.chat_imports.insert_one({
+        "user_id": user_id,
+        "status": "uploading",
+        "format_type": request.format_type,
+        "current_user_name": request.current_user_name,
+        "language": request.language,
+        "chunks_received": [],
+        "total_messages": 0,
+        "processed": 0,
+        "attempts": 0,
+        "created_at": now,
+        "updated_at": now
+    })
+    logger.info(f"Chat import {result.inserted_id} started by user {user_id}")
+    return {"import_id": str(result.inserted_id), "max_chunk_chars": settings.MAX_CHAT_CHUNK_CHARS}
+
+
+@router.post("/import-chat/{import_id}/chunk")
+async def upload_chat_chunk(
+    import_id: str,
+    request: ChatImportChunkRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Parse one part of a chat and stage its messages (re-sending a part is safe)"""
+    if len(request.content) > settings.MAX_CHAT_CHUNK_CHARS:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Each part must be under {settings.MAX_CHAT_CHUNK_CHARS:,} characters"
+        )
+
+    db = get_database()
+    session = await _get_import_session(db, import_id, current_user["user_id"])
+    if session["status"] != "uploading":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This chat import is no longer accepting uploads")
+    if request.index in session["chunks_received"]:
+        return {"index": request.index, "status": "already_received"}
+    if request.index > 0 and 0 not in session["chunks_received"]:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Upload part 0 first")
+
+    # Part 0 determines the chat format for the remaining parts
+    format_type = session.get("detected_format") or session.get("format_type")
+    messages, detected_format = await asyncio.to_thread(
+        chat_parser.parse, content=request.content, format_type=format_type
+    )
+
+    # A retried part may have been partly stored by the failed attempt
+    await db.chat_import_messages.delete_many({"import_id": import_id, "chunk": request.index})
+    if messages:
+        await db.chat_import_messages.insert_many([
+            {
+                "import_id": import_id, "chunk": request.index, "seq": seq,
+                "timestamp": msg["timestamp"], "sender": msg["sender"],
+                "message": msg["message"], "platform": msg["platform"]
+            }
+            for seq, msg in enumerate(messages)
+        ])
+
+    updates = {"updated_at": datetime.utcnow()}
+    if request.index == 0:
+        updates["detected_format"] = detected_format
+    await db.chat_imports.update_one({"_id": session["_id"]}, {
+        "$addToSet": {"chunks_received": request.index},
+        "$inc": {"total_messages": len(messages)},
+        "$set": updates
+    })
+    logger.info(f"Chat import {import_id}: part {request.index} parsed {len(messages):,} messages ({detected_format})")
+    return {"index": request.index, "messages": len(messages)}
+
+
+@router.post("/import-chat/{import_id}/finish")
+async def finish_chat_import(
+    import_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Start analyzing all uploaded parts in the background; poll GET /import-chat/{id} for the result"""
+    db = get_database()
+    session = await _get_import_session(db, import_id, current_user["user_id"])
+    if session["status"] == "done":
+        return {"status": "done"}
+    if session["status"] in ("uploading", "failed"):
+        await db.chat_imports.update_one({"_id": session["_id"]}, {"$set": {
+            "status": "processing", "error": None, "attempts": 0, "updated_at": datetime.utcnow()
+        }})
+    _ensure_import_job(import_id, current_user["user_id"])
+    return {"status": "processing"}
+
+
+@router.get("/import-chat/{import_id}")
+async def get_chat_import_status(
+    import_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Progress of a chat import; includes the full analysis once status is 'done'"""
+    db = get_database()
+    session = await _get_import_session(db, import_id, current_user["user_id"])
+
+    if session["status"] == "processing":
+        # Resumes the analysis if the server restarted while it was running
+        _ensure_import_job(import_id, current_user["user_id"])
+
+    response = {
+        "status": session["status"],
+        "processed": session.get("processed", 0),
+        "total": session.get("total_messages", 0),
+    }
+    if session["status"] == "failed":
+        response["error"] = session.get("error")
+    elif session["status"] == "done":
+        chat = await db.chat_analyses.find_one({"_id": ObjectId(session["chat_analysis_id"])})
+        if not chat:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This chat analysis was deleted")
+        response["result"] = _chat_analysis_response(
+            session["chat_analysis_id"], chat["analysis"], chat["total_messages"], chat["format_detected"]
+        )
+    return response
+
 
 @router.get("/chat-history")
 async def get_chat_analyses(
@@ -673,19 +934,20 @@ async def delete_chat_import(
                 detail="Chat import not found"
             )
         
-        # Get the timestamp to identify related messages
+        # Delete all individual messages from this bulk import. They carry the chat's id; older
+        # imports didn't tag them, so match those by when they were saved (their "timestamp" is the
+        # original chat time, not the import time)
         chat_timestamp = chat_analysis.get("created_at")
-        
-        # Delete all individual messages from this bulk import
-        # Messages are saved with the same timestamp (or very close) and source="bulk_import"
-        # We'll use a 5-minute window to catch all messages from this import session
-        time_start = chat_timestamp - timedelta(minutes=5)
-        time_end = chat_timestamp + timedelta(minutes=5)
-        
         messages_result = await analysis_collection.delete_many({
             "user_id": current_user["user_id"],
             "source": "bulk_import",
-            "timestamp": {"$gte": time_start, "$lte": time_end}
+            "$or": [
+                {"chat_analysis_id": chat_id},
+                {
+                    "chat_analysis_id": {"$exists": False},
+                    "created_at": {"$gte": chat_timestamp - timedelta(minutes=5), "$lte": chat_timestamp + timedelta(minutes=15)}
+                },
+            ]
         })
         
         # Delete the chat analysis document itself

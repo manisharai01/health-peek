@@ -9,9 +9,10 @@ Provides comprehensive analysis like ChatRecap AI:
 - Multilingual support: Hinglish, 6 Indian languages, 13 international languages
 """
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Iterable
 from datetime import datetime, timedelta
 from collections import Counter, defaultdict
+from array import array
 import re
 import logging
 import emoji
@@ -20,13 +21,422 @@ from .language_service import language_service
 
 logger = logging.getLogger(__name__)
 
+DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+# Core English words (always kept) — merged with the language-specific lexicon
+ENGLISH_POSITIVE = {
+    'love', 'happy', 'great', 'good', 'excellent', 'wonderful', 'amazing',
+    'awesome', 'fantastic', 'perfect', 'best', 'beautiful', 'thanks', 'thank',
+    'appreciate', 'joy', 'excited', 'glad', 'pleased', 'delighted', 'brilliant',
+    'yay', 'haha', 'lol', 'lmao', 'cool', 'nice', 'sweet', 'fun',
+}
+ENGLISH_NEGATIVE = {
+    'hate', 'sad', 'bad', 'terrible', 'awful', 'horrible', 'worst', 'angry',
+    'mad', 'upset', 'annoyed', 'frustrated', 'disappointed', 'sorry', 'difficult',
+    'hard', 'problem', 'issue', 'wrong', 'fail', 'failed', 'suck', 'sucks',
+    'damn', 'hell', 'fuck', 'shit', 'stupid', 'dumb', 'boring', 'bored',
+}
+
+
+def _sentiment_lexicon(language: str) -> Tuple[set, set]:
+    """Language-specific sentiment words (always includes English as base)."""
+    pos_words_lang, neg_words_lang = language_service.get_sentiment_words(language)
+    positive_words = set(w.lower() for w in pos_words_lang) | ENGLISH_POSITIVE
+    negative_words = set(w.lower() for w in neg_words_lang) | ENGLISH_NEGATIVE
+    return positive_words, negative_words
+
+
+def _classify_sentiment(text: str, positive_words: set, negative_words: set) -> int:
+    """Lexicon sentiment of one message: 0 = positive, 1 = negative, 2 = neutral."""
+    text_lower = text.lower()
+    words = re.findall(r'\b\w+\b', text_lower)
+
+    pos = sum(1 for word in words if word in positive_words)
+    neg = sum(1 for word in words if word in negative_words)
+
+    # Also check full-string matches for multi-char languages (CJK, Arabic, etc.)
+    for pw in positive_words:
+        if len(pw) > 1 and pw in text_lower:
+            pos += 1
+            break
+    for nw in negative_words:
+        if len(nw) > 1 and nw in text_lower:
+            neg += 1
+            break
+
+    if pos > neg:
+        return 0
+    if neg > pos:
+        return 1
+    return 2
+
+
+def _language_info(lang_code: str) -> Dict:
+    info = language_service.get_language_info(lang_code)
+    return {
+        "detected_language": lang_code,
+        "language_name":     info.get("name", "English"),
+        "native_name":       info.get("native", "English"),
+        "region":            info.get("region", "international"),
+        "script":            info.get("script", "latin"),
+    }
+
+
+def _empty_analysis() -> Dict:
+    """Return empty analysis structure"""
+    return {
+        'participants': {},
+        'basic_stats': {},
+        'messaging_patterns': {},
+        'engagement_metrics': {},
+        'sentiment_analysis': {},
+        'red_flags': {'red_flags': [], 'warnings': [], 'total_red_flags': 0, 'total_warnings': 0},
+        'emoji_stats': {},
+        'time_analysis': {},
+        'language_info': {'detected_language': 'en', 'language_name': 'English', 'native_name': 'English', 'region': 'international', 'script': 'latin'},
+        'conversation_period': {}
+    }
+
+
+class ConversationAccumulator:
+    """
+    Builds the full conversation analysis one message at a time, so a chat of any
+    size can be analyzed without holding all of its messages in memory.
+
+    Messages must be added in timestamp order (ties in their original order), and the
+    total message count must be known up front (the frequency-drop red flag needs it).
+    Memory grows with the number of participants, days, weeks and distinct emojis,
+    plus ~24 bytes per message for the gap / response-time samples.
+    """
+
+    def __init__(self, total_messages: int, current_user_name: Optional[str] = None, language: str = "en"):
+        self.total_messages = total_messages
+        self.current_user_name = current_user_name
+        self.language = language
+        self.positive_words, self.negative_words = _sentiment_lexicon(language)
+        self.split_point = int(total_messages * 0.75)
+
+        self.count = 0
+        self.first_ts = self.last_ts = None
+        self.prev_sender = self.prev_ts = None
+
+        # Basic stats
+        self.sender_counts = Counter()
+        self.length_sum = 0
+        self.longest = self.shortest = None  # (sender, length)
+
+        # Messaging patterns
+        self.by_date = defaultdict(int)
+        self.by_hour = defaultdict(int)
+        self.by_weekday = defaultdict(int)
+        self.sender_last_ts = {}
+        self.sender_gaps = defaultdict(lambda: array('d'))  # hours between a sender's consecutive messages
+
+        # Engagement
+        self.responses = defaultdict(lambda: array('d'))  # responder -> minutes (< 24h)
+        self.initiations = defaultdict(int)
+        self.exchange_len = 0
+        self.exchanges_total = self.exchanges_sum = self.exchanges_max = 0
+
+        # Sentiment, red flags, emojis, time patterns
+        self.sentiment_counts = defaultdict(lambda: [0, 0, 0])  # positive, negative, neutral
+        self.sender_length_sum = defaultdict(int)
+        self.sender_questions = defaultdict(int)
+        self.sender_emojis = defaultdict(Counter)
+        self.weekly_responses = defaultdict(lambda: array('d'))
+        self.historical_first = self.historical_last = self.recent_first = None
+
+    def add_many(self, messages: Iterable[Dict]) -> None:
+        for msg in messages:
+            self.add(msg)
+
+    def add(self, msg: Dict) -> None:
+        sender, ts, text = msg['sender'], msg['timestamp'], msg['message']
+        i = self.count
+        self.count += 1
+
+        if i == 0:
+            self.first_ts = ts
+            self.historical_first = ts
+        if i == self.split_point - 1:
+            self.historical_last = ts
+        if i == self.split_point:
+            self.recent_first = ts
+        self.last_ts = ts
+
+        self.sender_counts[sender] += 1
+        length = len(text)
+        self.length_sum += length
+        if self.longest is None or length > self.longest[1]:
+            self.longest = (sender, length)
+        if self.shortest is None or length < self.shortest[1]:
+            self.shortest = (sender, length)
+
+        self.by_date[ts.date()] += 1
+        self.by_hour[ts.hour] += 1
+        self.by_weekday[DAY_NAMES[ts.weekday()]] += 1
+        last = self.sender_last_ts.get(sender)
+        if last is not None:
+            self.sender_gaps[sender].append((ts - last).total_seconds() / 3600)
+        self.sender_last_ts[sender] = ts
+
+        if i == 0:
+            self.initiations[sender] += 1
+            self.exchange_len = 1
+        else:
+            if self.prev_sender != sender:
+                minutes = (ts - self.prev_ts).total_seconds() / 60
+                # Only count reasonable response times (< 24 hours)
+                if minutes < 1440:
+                    self.responses[sender].append(minutes)
+                self.weekly_responses[ts.strftime('%Y-W%W')].append(minutes)
+                self.exchange_len += 1
+            else:
+                # Same sender, end exchange if it has >= 2 messages
+                if self.exchange_len >= 2:
+                    self._record_exchange(self.exchange_len)
+                self.exchange_len = 1
+            # New conversation if > 4 hours gap
+            if (ts - self.prev_ts).total_seconds() / 3600 > 4:
+                self.initiations[sender] += 1
+
+        self.sentiment_counts[sender][_classify_sentiment(text, self.positive_words, self.negative_words)] += 1
+        self.sender_length_sum[sender] += length
+        if '?' in text:
+            self.sender_questions[sender] += 1
+        self.sender_emojis[sender].update(e['emoji'] for e in emoji.emoji_list(text))
+
+        self.prev_sender, self.prev_ts = sender, ts
+
+    def _record_exchange(self, length: int) -> None:
+        self.exchanges_total += 1
+        self.exchanges_sum += length
+        self.exchanges_max = max(self.exchanges_max, length)
+
+    def result(self) -> Dict:
+        if self.count == 0:
+            return _empty_analysis()
+        if self.count != self.total_messages:
+            raise ValueError(f"Expected {self.total_messages} messages, got {self.count}")
+
+        participants = {}
+        for sender, count in self.sender_counts.most_common():
+            participants[sender] = {
+                'name': sender,
+                'role': 'you' if sender == self.current_user_name else 'other',
+                'message_count': count
+            }
+
+        engagement = self._engagement_metrics(participants)
+        return {
+            "participants":       participants,
+            "basic_stats":        self._basic_stats(participants),
+            "messaging_patterns": self._messaging_patterns(participants),
+            "engagement_metrics": engagement,
+            "sentiment_analysis": self._sentiment_distribution(participants),
+            "red_flags":          self._red_flags(participants, engagement),
+            "emoji_stats":        self._emoji_stats(participants),
+            "time_analysis":      self._time_patterns(),
+            "language_info":      _language_info(self.language),
+            "conversation_period": {
+                "start":         self.first_ts.isoformat(),
+                "end":           self.last_ts.isoformat(),
+                "duration_days": (self.last_ts - self.first_ts).days,
+            },
+        }
+
+    def _basic_stats(self, participants: Dict) -> Dict:
+        return {
+            'total_messages': self.count,
+            'messages_per_participant': {name: info['message_count'] for name, info in participants.items()},
+            'average_message_length': round(self.length_sum / self.count, 1),
+            'longest_message': {'sender': self.longest[0], 'length': self.longest[1]},
+            'shortest_message': {'sender': self.shortest[0], 'length': self.shortest[1]},
+        }
+
+    def _messaging_patterns(self, participants: Dict) -> Dict:
+        most_active_days = sorted(self.by_date.items(), key=lambda x: x[1], reverse=True)[:5]
+        most_active_hours = sorted(self.by_hour.items(), key=lambda x: x[1], reverse=True)[:5]
+
+        span_days = max(1, (self.last_ts - self.first_ts).days)
+        freq_by_participant = {}
+        for name in participants:
+            gaps = self.sender_gaps.get(name)
+            if gaps:
+                freq_by_participant[name] = {
+                    'average_hours_between_messages': round(sum(gaps) / len(gaps), 2),
+                    'messages_per_day': round(participants[name]['message_count'] / span_days, 2)
+                }
+
+        return {
+            'most_active_days': [{'date': str(date), 'count': count} for date, count in most_active_days],
+            'most_active_hours': [{'hour': f"{hour:02d}:00", 'count': count} for hour, count in most_active_hours],
+            'frequency_per_participant': freq_by_participant,
+            'day_of_week_distribution': dict(self.by_weekday)
+        }
+
+    def _engagement_metrics(self, participants: Dict) -> Dict:
+        avg_response_by_participant = {}
+        for name in participants:
+            times = self.responses.get(name)
+            if times:
+                avg_response_by_participant[name] = {
+                    'average_minutes': round(sum(times) / len(times), 2),
+                    'median_minutes': round(sorted(times)[len(times) // 2], 2),
+                    'fastest_minutes': round(min(times), 2),
+                    'slowest_minutes': round(max(times), 2)
+                }
+
+        total, length_sum, longest = self.exchanges_total, self.exchanges_sum, self.exchanges_max
+        if self.exchange_len >= 2:  # the conversation ends mid-exchange
+            total, length_sum, longest = total + 1, length_sum + self.exchange_len, max(longest, self.exchange_len)
+
+        return {
+            'response_time_analysis': avg_response_by_participant,
+            'conversation_initiations': dict(self.initiations),
+            'back_and_forth_metrics': {
+                'total_exchanges': total,
+                'average_exchange_length': round(length_sum / total if total else 0, 2),
+                'longest_exchange': longest if total else 0
+            }
+        }
+
+    def _sentiment_distribution(self, participants: Dict) -> Dict:
+        sentiment_by_participant = {}
+        for name in participants:
+            positive_count, negative_count, neutral_count = self.sentiment_counts[name]
+            total = participants[name]['message_count']
+            sentiment_by_participant[name] = {
+                'positive_messages': positive_count,
+                'negative_messages': negative_count,
+                'neutral_messages':  neutral_count,
+                'positive_ratio':    round(positive_count / total, 3) if total > 0 else 0,
+                'negative_ratio':    round(negative_count / total, 3) if total > 0 else 0,
+                'neutral_ratio':     round(neutral_count  / total, 3) if total > 0 else 0,
+            }
+        return sentiment_by_participant
+
+    def _red_flags(self, participants: Dict, engagement: Dict) -> Dict:
+        """Detect potential red flags in communication patterns"""
+        red_flags = []
+        warnings = []
+
+        # Red Flag 1: Significant imbalance in message counts
+        if len(participants) == 2:
+            counts = list(participants.values())
+            ratio = max(counts[0]['message_count'], counts[1]['message_count']) / max(1, min(counts[0]['message_count'], counts[1]['message_count']))
+
+            if ratio > 3:
+                red_flags.append({
+                    'type': 'message_imbalance',
+                    'severity': 'high',
+                    'description': f"Significant message imbalance: one person sends {ratio:.1f}x more messages",
+                    'suggestion': "This may indicate unequal investment in the conversation"
+                })
+            elif ratio > 2:
+                warnings.append({
+                    'type': 'message_imbalance',
+                    'severity': 'medium',
+                    'description': f"Message imbalance detected: one person sends {ratio:.1f}x more messages",
+                    'suggestion': "Consider if both people are equally engaged"
+                })
+
+        # Red Flag 2: Slow or declining response times
+        response_analysis = engagement.get('response_time_analysis', {})
+        for name, times in response_analysis.items():
+            avg_minutes = times.get('average_minutes', 0)
+            if avg_minutes > 180:  # > 3 hours average
+                warnings.append({
+                    'type': 'slow_responses',
+                    'severity': 'medium',
+                    'description': f"{name} takes an average of {avg_minutes/60:.1f} hours to respond",
+                    'suggestion': "Delayed responses might indicate low prioritization"
+                })
+
+        # Red Flag 3: Drop in message frequency (recent 25% vs historical 75%)
+        if self.count > 20:
+            historical_period = (self.historical_last - self.historical_first).days or 1
+            recent_period = (self.last_ts - self.recent_first).days or 1
+
+            historical_rate = self.split_point / historical_period
+            recent_rate = (self.count - self.split_point) / recent_period
+
+            if recent_rate < historical_rate * 0.5:  # 50% drop
+                red_flags.append({
+                    'type': 'frequency_drop',
+                    'severity': 'high',
+                    'description': f"Messaging frequency dropped by {((historical_rate - recent_rate) / historical_rate * 100):.0f}%",
+                    'suggestion': "Significant decrease in communication may indicate fading interest"
+                })
+
+        # Red Flag 4: One-sided conversation initiation
+        initiations = engagement.get('conversation_initiations', {})
+        if len(initiations) == 2:
+            counts = list(initiations.values())
+            if max(counts) / max(1, min(counts)) > 4:
+                red_flags.append({
+                    'type': 'one_sided_initiation',
+                    'severity': 'high',
+                    'description': "One person initiates conversations 4x more often",
+                    'suggestion': "Consider if the other person is reciprocating interest"
+                })
+
+        # Red Flag 5: Low engagement (short responses, no questions)
+        for name in participants:
+            message_count = participants[name]['message_count']
+            if message_count > 5:
+                avg_length = self.sender_length_sum[name] / message_count
+                question_ratio = self.sender_questions.get(name, 0) / message_count
+
+                if avg_length < 15 and question_ratio < 0.1:
+                    warnings.append({
+                        'type': 'low_engagement',
+                        'severity': 'medium',
+                        'description': f"{name} sends short messages (avg {avg_length:.0f} chars) with few questions",
+                        'suggestion': "Short, non-inquisitive responses may indicate low engagement"
+                    })
+
+        return {
+            'red_flags': red_flags,
+            'warnings': warnings,
+            'total_red_flags': len(red_flags),
+            'total_warnings': len(warnings),
+            'overall_health': 'healthy' if len(red_flags) == 0 else ('concerning' if len(red_flags) < 3 else 'unhealthy')
+        }
+
+    def _emoji_stats(self, participants: Dict) -> Dict:
+        emoji_by_participant = {}
+        for name in participants:
+            emoji_counter = self.sender_emojis[name]
+            total_emojis = sum(emoji_counter.values())
+            message_count = participants[name]['message_count']
+            emoji_by_participant[name] = {
+                'total_emojis': total_emojis,
+                'unique_emojis': len(emoji_counter),
+                'emojis_per_message': round(total_emojis / message_count, 2) if message_count else 0,
+                'most_used_emojis': [
+                    {'emoji': em, 'count': count}
+                    for em, count in emoji_counter.most_common(10)
+                ]
+            }
+        return emoji_by_participant
+
+    def _time_patterns(self) -> Dict:
+        """Response time trends by week"""
+        return {
+            'weekly_response_trends': {
+                week: {
+                    'average_response_minutes': round(sum(times) / len(times), 2) if times else 0,
+                    'messages': len(times)
+                }
+                for week, times in self.weekly_responses.items()
+            }
+        }
+
 
 class ChatAnalyzer:
     """Comprehensive chat analysis engine"""
-    
-    def __init__(self):
-        pass  # Emoji pattern no longer needed with emoji.emoji_list()
-    
+
     def analyze_conversation(
         self,
         messages: List[Dict],
@@ -34,7 +444,8 @@ class ChatAnalyzer:
         language: Optional[str] = None,
     ) -> Dict:
         """
-        Perform comprehensive analysis on a conversation.
+        Perform comprehensive analysis on a conversation held in memory.
+        (Large imports stream messages through ConversationAccumulator instead.)
 
         Args:
             messages:          List of message dicts (timestamp, sender, message)
@@ -45,60 +456,14 @@ class ChatAnalyzer:
             Comprehensive analysis dictionary (now includes language_info)
         """
         if not messages:
-            return self._empty_analysis()
+            return _empty_analysis()
 
         messages = sorted(messages, key=lambda x: x["timestamp"])
-        participants = self._identify_participants(messages, current_user_name)
-
-        # ── Language detection ────────────────────────────────────────────
         detected_language = self._detect_conversation_language(messages, language)
 
-        # ── Analysis modules ──────────────────────────────────────────────
-        basic_stats    = self._analyze_basic_stats(messages, participants)
-        patterns       = self._analyze_messaging_patterns(messages, participants)
-        engagement     = self._analyze_engagement_metrics(messages, participants)
-        sentiment_ana  = self._analyze_sentiment_distribution(messages, participants, detected_language)
-        red_flags      = self._detect_red_flags(messages, participants, patterns, engagement)
-        emoji_stats    = self._analyze_emojis(messages, participants)
-        time_analysis  = self._analyze_time_patterns(messages, participants)
-        lang_info      = self._build_language_info(detected_language)
-
-        return {
-            "participants":       participants,
-            "basic_stats":        basic_stats,
-            "messaging_patterns": patterns,
-            "engagement_metrics": engagement,
-            "sentiment_analysis": sentiment_ana,
-            "red_flags":          red_flags,
-            "emoji_stats":        emoji_stats,
-            "time_analysis":      time_analysis,
-            "language_info":      lang_info,
-            "conversation_period": {
-                "start":         messages[0]["timestamp"].isoformat(),
-                "end":           messages[-1]["timestamp"].isoformat(),
-                "duration_days": (messages[-1]["timestamp"] - messages[0]["timestamp"]).days,
-            },
-        }
-    
-    def _identify_participants(
-        self,
-        messages: List[Dict],
-        current_user_name: str = None
-    ) -> Dict:
-        """Identify and categorize participants"""
-        senders = [msg['sender'] for msg in messages]
-        sender_counts = Counter(senders)
-        
-        participants = {}
-        for sender, count in sender_counts.most_common():
-            role = 'you' if sender == current_user_name else 'other'
-            participants[sender] = {
-                'name': sender,
-                'role': role,
-                'message_count': count
-            }
-        
-        return participants
+        accumulator = ConversationAccumulator(len(messages), current_user_name, detected_language)
+        accumulator.add_many(messages)
+        return accumulator.result()
 
     # ── Language helpers ──────────────────────────────────────────────────────
 
@@ -137,427 +502,8 @@ class ChatAnalyzer:
         logger.info(f"Dominant conversation language: {dominant} (votes: {lang_votes})")
         return dominant
 
-    def _build_language_info(self, lang_code: str) -> Dict:
-        info = language_service.get_language_info(lang_code)
-        return {
-            "detected_language": lang_code,
-            "language_name":     info.get("name", "English"),
-            "native_name":       info.get("native", "English"),
-            "region":            info.get("region", "international"),
-            "script":            info.get("script", "latin"),
-        }
-
-    
-    def _analyze_basic_stats(self, messages: List[Dict], participants: Dict) -> Dict:
-        """Calculate basic statistics"""
-        total_messages = len(messages)
-        
-        # Message counts per participant
-        counts_by_participant = {}
-        for name, info in participants.items():
-            counts_by_participant[name] = info['message_count']
-        
-        # Average message length
-        avg_length = sum(len(msg['message']) for msg in messages) / total_messages if total_messages > 0 else 0
-        
-        # Longest and shortest messages
-        lengths = [(msg['sender'], len(msg['message'])) for msg in messages]
-        longest = max(lengths, key=lambda x: x[1]) if lengths else ('', 0)
-        shortest = min(lengths, key=lambda x: x[1]) if lengths else ('', 0)
-        
-        return {
-            'total_messages': total_messages,
-            'messages_per_participant': counts_by_participant,
-            'average_message_length': round(avg_length, 1),
-            'longest_message': {'sender': longest[0], 'length': longest[1]},
-            'shortest_message': {'sender': shortest[0], 'length': shortest[1]},
-        }
-    
-    def _analyze_messaging_patterns(self, messages: List[Dict], participants: Dict) -> Dict:
-        """Analyze messaging frequency and patterns"""
-        if not messages:
-            return {}
-        
-        # Daily message frequency
-        messages_by_date = defaultdict(int)
-        for msg in messages:
-            date = msg['timestamp'].date()
-            messages_by_date[date] += 1
-        
-        # Most active days
-        most_active_days = sorted(
-            messages_by_date.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:5]
-        
-        # Hourly distribution (most active hours)
-        hourly_dist = defaultdict(int)
-        for msg in messages:
-            hour = msg['timestamp'].hour
-            hourly_dist[hour] += 1
-        
-        most_active_hours = sorted(
-            hourly_dist.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:5]
-        
-        # Messaging frequency per participant
-        freq_by_participant = {}
-        for name in participants:
-            participant_msgs = [msg for msg in messages if msg['sender'] == name]
-            if len(participant_msgs) > 1:
-                time_diffs = []
-                for i in range(1, len(participant_msgs)):
-                    diff = (participant_msgs[i]['timestamp'] - participant_msgs[i-1]['timestamp']).total_seconds() / 3600
-                    time_diffs.append(diff)
-                
-                avg_gap = sum(time_diffs) / len(time_diffs) if time_diffs else 0
-                freq_by_participant[name] = {
-                    'average_hours_between_messages': round(avg_gap, 2),
-                    'messages_per_day': round(len(participant_msgs) / max(1, (messages[-1]['timestamp'] - messages[0]['timestamp']).days), 2)
-                }
-        
-        # Day of week distribution
-        day_of_week_dist = defaultdict(int)
-        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        for msg in messages:
-            day = msg['timestamp'].weekday()
-            day_of_week_dist[day_names[day]] += 1
-        
-        return {
-            'most_active_days': [
-                {'date': str(date), 'count': count}
-                for date, count in most_active_days
-            ],
-            'most_active_hours': [
-                {'hour': f"{hour:02d}:00", 'count': count}
-                for hour, count in most_active_hours
-            ],
-            'frequency_per_participant': freq_by_participant,
-            'day_of_week_distribution': dict(day_of_week_dist)
-        }
-    
-    def _analyze_engagement_metrics(self, messages: List[Dict], participants: Dict) -> Dict:
-        """Analyze response times and engagement"""
-        response_times = []
-        conversation_threads = []
-        
-        # Calculate response times
-        for i in range(1, len(messages)):
-            prev_msg = messages[i-1]
-            curr_msg = messages[i]
-            
-            # If different senders, it's a response
-            if prev_msg['sender'] != curr_msg['sender']:
-                time_diff = (curr_msg['timestamp'] - prev_msg['timestamp']).total_seconds() / 60  # in minutes
-                
-                # Only count reasonable response times (< 24 hours)
-                if time_diff < 1440:
-                    response_times.append({
-                        'responder': curr_msg['sender'],
-                        'time_minutes': time_diff
-                    })
-        
-        # Calculate average response time per participant
-        avg_response_by_participant = {}
-        for name in participants:
-            participant_responses = [r['time_minutes'] for r in response_times if r['responder'] == name]
-            if participant_responses:
-                avg_response_by_participant[name] = {
-                    'average_minutes': round(sum(participant_responses) / len(participant_responses), 2),
-                    'median_minutes': round(sorted(participant_responses)[len(participant_responses)//2], 2),
-                    'fastest_minutes': round(min(participant_responses), 2),
-                    'slowest_minutes': round(max(participant_responses), 2)
-                }
-        
-        # Conversation initiation analysis
-        initiations_by_participant = defaultdict(int)
-        if len(messages) > 0:
-            initiations_by_participant[messages[0]['sender']] += 1
-        
-        for i in range(1, len(messages)):
-            prev_msg = messages[i-1]
-            curr_msg = messages[i]
-            
-            # New conversation if > 4 hours gap
-            time_gap = (curr_msg['timestamp'] - prev_msg['timestamp']).total_seconds() / 3600
-            if time_gap > 4:
-                initiations_by_participant[curr_msg['sender']] += 1
-        
-        # Back-and-forth analysis (consecutive message exchanges)
-        exchanges = []
-        current_exchange = []
-        
-        for i in range(len(messages)):
-            if i == 0:
-                current_exchange.append(messages[i])
-            else:
-                prev_sender = messages[i-1]['sender']
-                curr_sender = messages[i]['sender']
-                
-                if prev_sender != curr_sender:
-                    current_exchange.append(messages[i])
-                else:
-                    # Same sender, end exchange if it has >= 2 messages
-                    if len(current_exchange) >= 2:
-                        exchanges.append(len(current_exchange))
-                    current_exchange = [messages[i]]
-        
-        if len(current_exchange) >= 2:
-            exchanges.append(len(current_exchange))
-        
-        avg_exchange_length = sum(exchanges) / len(exchanges) if exchanges else 0
-        
-        return {
-            'response_time_analysis': avg_response_by_participant,
-            'conversation_initiations': dict(initiations_by_participant),
-            'back_and_forth_metrics': {
-                'total_exchanges': len(exchanges),
-                'average_exchange_length': round(avg_exchange_length, 2),
-                'longest_exchange': max(exchanges) if exchanges else 0
-            }
-        }
-    
-    def _analyze_sentiment_distribution(
-        self, messages: List[Dict], participants: Dict, language: str = "en"
-    ) -> Dict:
-        """
-        Analyse sentiment patterns using a multilingual lexicon-based approach.
-        Supports English, Hinglish, and all other configured languages.
-        """
-        # Get language-specific sentiment words (always includes English as base)
-        pos_words_lang, neg_words_lang = language_service.get_sentiment_words(language)
-
-        # Core English words (always kept) — merged to avoid duplicates
-        english_positive = {
-            'love', 'happy', 'great', 'good', 'excellent', 'wonderful', 'amazing',
-            'awesome', 'fantastic', 'perfect', 'best', 'beautiful', 'thanks', 'thank',
-            'appreciate', 'joy', 'excited', 'glad', 'pleased', 'delighted', 'brilliant',
-            'yay', 'haha', 'lol', 'lmao', 'cool', 'nice', 'sweet', 'fun',
-        }
-        english_negative = {
-            'hate', 'sad', 'bad', 'terrible', 'awful', 'horrible', 'worst', 'angry',
-            'mad', 'upset', 'annoyed', 'frustrated', 'disappointed', 'sorry', 'difficult',
-            'hard', 'problem', 'issue', 'wrong', 'fail', 'failed', 'suck', 'sucks',
-            'damn', 'hell', 'fuck', 'shit', 'stupid', 'dumb', 'boring', 'bored',
-        }
-
-        positive_words = set(w.lower() for w in pos_words_lang) | english_positive
-        negative_words = set(w.lower() for w in neg_words_lang) | english_negative
-
-        sentiment_by_participant = {}
-
-        for name in participants:
-            participant_msgs = [msg for msg in messages if msg['sender'] == name]
-
-            positive_count = negative_count = neutral_count = 0
-
-            for msg in participant_msgs:
-                text_lower = msg['message'].lower()
-                words = re.findall(r'\b\w+\b', text_lower)
-
-                pos = sum(1 for word in words if word in positive_words)
-                neg = sum(1 for word in words if word in negative_words)
-
-                # Also check full-string matches for multi-char languages (CJK, Arabic, etc.)
-                for pw in positive_words:
-                    if len(pw) > 1 and pw in text_lower:
-                        pos += 1
-                        break
-                for nw in negative_words:
-                    if len(nw) > 1 and nw in text_lower:
-                        neg += 1
-                        break
-
-                if pos > neg:
-                    positive_count += 1
-                elif neg > pos:
-                    negative_count += 1
-                else:
-                    neutral_count += 1
-
-            total = len(participant_msgs)
-            sentiment_by_participant[name] = {
-                'positive_messages': positive_count,
-                'negative_messages': negative_count,
-                'neutral_messages':  neutral_count,
-                'positive_ratio':    round(positive_count / total, 3) if total > 0 else 0,
-                'negative_ratio':    round(negative_count / total, 3) if total > 0 else 0,
-                'neutral_ratio':     round(neutral_count  / total, 3) if total > 0 else 0,
-            }
-
-        return sentiment_by_participant
-    
-    def _detect_red_flags(
-        self,
-        messages: List[Dict],
-        participants: Dict,
-        patterns: Dict,
-        engagement: Dict
-    ) -> Dict:
-        """Detect potential red flags in communication patterns"""
-        red_flags = []
-        warnings = []
-        
-        # Red Flag 1: Significant imbalance in message counts
-        if len(participants) == 2:
-            counts = list(participants.values())
-            if len(counts) == 2:
-                ratio = max(counts[0]['message_count'], counts[1]['message_count']) / max(1, min(counts[0]['message_count'], counts[1]['message_count']))
-                
-                if ratio > 3:
-                    red_flags.append({
-                        'type': 'message_imbalance',
-                        'severity': 'high',
-                        'description': f"Significant message imbalance: one person sends {ratio:.1f}x more messages",
-                        'suggestion': "This may indicate unequal investment in the conversation"
-                    })
-                elif ratio > 2:
-                    warnings.append({
-                        'type': 'message_imbalance',
-                        'severity': 'medium',
-                        'description': f"Message imbalance detected: one person sends {ratio:.1f}x more messages",
-                        'suggestion': "Consider if both people are equally engaged"
-                    })
-        
-        # Red Flag 2: Slow or declining response times
-        response_analysis = engagement.get('response_time_analysis', {})
-        for name, times in response_analysis.items():
-            avg_minutes = times.get('average_minutes', 0)
-            if avg_minutes > 180:  # > 3 hours average
-                warnings.append({
-                    'type': 'slow_responses',
-                    'severity': 'medium',
-                    'description': f"{name} takes an average of {avg_minutes/60:.1f} hours to respond",
-                    'suggestion': "Delayed responses might indicate low prioritization"
-                })
-        
-        # Red Flag 3: Drop in message frequency (compare recent vs historical)
-        if len(messages) > 20:
-            # Split into recent (last 25%) and historical (first 75%)
-            split_point = int(len(messages) * 0.75)
-            historical_msgs = messages[:split_point]
-            recent_msgs = messages[split_point:]
-            
-            historical_period = (historical_msgs[-1]['timestamp'] - historical_msgs[0]['timestamp']).days or 1
-            recent_period = (recent_msgs[-1]['timestamp'] - recent_msgs[0]['timestamp']).days or 1
-            
-            historical_rate = len(historical_msgs) / historical_period
-            recent_rate = len(recent_msgs) / recent_period
-            
-            if recent_rate < historical_rate * 0.5:  # 50% drop
-                red_flags.append({
-                    'type': 'frequency_drop',
-                    'severity': 'high',
-                    'description': f"Messaging frequency dropped by {((historical_rate - recent_rate) / historical_rate * 100):.0f}%",
-                    'suggestion': "Significant decrease in communication may indicate fading interest"
-                })
-        
-        # Red Flag 4: One-sided conversation initiation
-        initiations = engagement.get('conversation_initiations', {})
-        if len(initiations) == 2:
-            counts = list(initiations.values())
-            if max(counts) / max(1, min(counts)) > 4:
-                red_flags.append({
-                    'type': 'one_sided_initiation',
-                    'severity': 'high',
-                    'description': "One person initiates conversations 4x more often",
-                    'suggestion': "Consider if the other person is reciprocating interest"
-                })
-        
-        # Red Flag 5: Low engagement (short responses, no questions)
-        for name in participants:
-            participant_msgs = [msg for msg in messages if msg['sender'] == name]
-            if len(participant_msgs) > 5:
-                avg_length = sum(len(msg['message']) for msg in participant_msgs) / len(participant_msgs)
-                question_count = sum(1 for msg in participant_msgs if '?' in msg['message'])
-                question_ratio = question_count / len(participant_msgs)
-                
-                if avg_length < 15 and question_ratio < 0.1:
-                    warnings.append({
-                        'type': 'low_engagement',
-                        'severity': 'medium',
-                        'description': f"{name} sends short messages (avg {avg_length:.0f} chars) with few questions",
-                        'suggestion': "Short, non-inquisitive responses may indicate low engagement"
-                    })
-        
-        return {
-            'red_flags': red_flags,
-            'warnings': warnings,
-            'total_red_flags': len(red_flags),
-            'total_warnings': len(warnings),
-            'overall_health': 'healthy' if len(red_flags) == 0 else ('concerning' if len(red_flags) < 3 else 'unhealthy')
-        }
-    
-    def _analyze_emojis(self, messages: List[Dict], participants: Dict) -> Dict:
-        """Analyze emoji usage patterns"""
-        emoji_by_participant = {}
-        
-        for name in participants:
-            participant_msgs = [msg for msg in messages if msg['sender'] == name]
-            
-            all_emojis = []
-            for msg in participant_msgs:
-                emojis = emoji.emoji_list(msg['message'])
-                all_emojis.extend([e['emoji'] for e in emojis])
-            
-            emoji_counter = Counter(all_emojis)
-            
-            emoji_by_participant[name] = {
-                'total_emojis': len(all_emojis),
-                'unique_emojis': len(emoji_counter),
-                'emojis_per_message': round(len(all_emojis) / len(participant_msgs), 2) if participant_msgs else 0,
-                'most_used_emojis': [
-                    {'emoji': em, 'count': count}
-                    for em, count in emoji_counter.most_common(10)
-                ]
-            }
-        
-        return emoji_by_participant
-    
-    def _analyze_time_patterns(self, messages: List[Dict], participants: Dict) -> Dict:
-        """Analyze time-based patterns"""
-        # Response time trends over time
-        time_periods = defaultdict(list)
-        
-        for i in range(1, len(messages)):
-            prev_msg = messages[i-1]
-            curr_msg = messages[i]
-            
-            if prev_msg['sender'] != curr_msg['sender']:
-                time_diff = (curr_msg['timestamp'] - prev_msg['timestamp']).total_seconds() / 60
-                
-                # Group by week
-                week = curr_msg['timestamp'].strftime('%Y-W%W')
-                time_periods[week].append(time_diff)
-        
-        trends = {}
-        for week, times in time_periods.items():
-            trends[week] = {
-                'average_response_minutes': round(sum(times) / len(times), 2) if times else 0,
-                'messages': len(times)
-            }
-        
-        return {
-            'weekly_response_trends': trends
-        }
-    
     def _empty_analysis(self) -> Dict:
-        """Return empty analysis structure"""
-        return {
-            'participants': {},
-            'basic_stats': {},
-            'messaging_patterns': {},
-            'engagement_metrics': {},
-            'sentiment_analysis': {},
-            'red_flags': {'red_flags': [], 'warnings': [], 'total_red_flags': 0, 'total_warnings': 0},
-            'emoji_stats': {},
-            'time_analysis': {},
-            'language_info': {'detected_language': 'en', 'language_name': 'English', 'native_name': 'English', 'region': 'international', 'script': 'latin'},
-            'conversation_period': {}
-        }
+        return _empty_analysis()
 
 
 # Singleton instance
