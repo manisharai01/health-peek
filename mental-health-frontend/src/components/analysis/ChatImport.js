@@ -32,6 +32,16 @@ const LANGUAGE_OPTIONS = [
   { code: 'pl',  label: '🇵🇱 Polish',     group: 'International' },
 ];
 
+// Must match MAX_CHAT_IMPORT_CHARS on the backend (larger imports crash the free-tier server)
+const MAX_IMPORT_CHARS = 2000000;
+
+// Chat exports are chronological, so keep the most recent messages, cut at a line boundary
+const keepMostRecent = (text) => {
+  if (text.length <= MAX_IMPORT_CHARS) return text;
+  const tail = text.slice(-MAX_IMPORT_CHARS);
+  return tail.slice(tail.indexOf('\n') + 1);
+};
+
 const ChatImport = ({ onImportSuccess }) => {
   const [chatContent, setChatContent] = useState('');
   const [formatType, setFormatType] = useState('');
@@ -53,7 +63,16 @@ const ChatImport = ({ onImportSuccess }) => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      setChatContent(event.target.result);
+      const text = event.target.result;
+      const kept = keepMostRecent(text);
+      if (kept.length < text.length) {
+        const percent = Math.max(1, Math.round((kept.length / text.length) * 100));
+        setFileInfo(prev => ({
+          ...prev,
+          notice: `This chat is too large to import in full, so only the most recent ~${percent}% of it will be analyzed.`
+        }));
+      }
+      setChatContent(kept);
     };
     reader.readAsText(file);
   };
@@ -68,6 +87,11 @@ const ChatImport = ({ onImportSuccess }) => {
     
     if (!chatContent.trim()) {
       setError('Please provide chat content');
+      return;
+    }
+
+    if (chatContent.length > MAX_IMPORT_CHARS) {
+      setError(`Chat is too long to import (${chatContent.length.toLocaleString()} characters). Please keep it under ${MAX_IMPORT_CHARS.toLocaleString()} characters, e.g. only recent months.`);
       return;
     }
 
@@ -146,6 +170,9 @@ const ChatImport = ({ onImportSuccess }) => {
                   <span>✓ {fileInfo.name}</span>
                   <span className="file-size">{fileInfo.size}</span>
                 </div>
+              )}
+              {fileInfo?.notice && (
+                <p className="file-notice">⚠️ {fileInfo.notice}</p>
               )}
             </div>
 

@@ -44,4 +44,8 @@ class Settings:
     MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     ALLOWED_FILE_TYPES = ["text/plain", "application/json", "text/csv"]
 
+    # Chat import limit (characters). Larger chats exhaust the 512 MB free-tier
+    # instance and the stored chat exceeds MongoDB's 16 MB document limit (~9 MB of text).
+    MAX_CHAT_IMPORT_CHARS = int(os.getenv("MAX_CHAT_IMPORT_CHARS", "2000000"))
+
 settings = Settings()

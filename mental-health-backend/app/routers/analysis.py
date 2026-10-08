@@ -11,7 +11,9 @@ from ..services.chat_analyzer import chat_analyzer
 from ..services.language_service import language_service
 from ..core.security import get_current_user
 from ..core.database import get_database
+from ..core.config import settings
 from datetime import datetime, timedelta
+import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
@@ -314,10 +316,20 @@ async def import_and_analyze_chat(
     Supports WhatsApp, Telegram, Discord, iMessage, and generic formats
     """
     try:
-        logger.info(f"Chat import request from user {current_user['user_id']}")
-        
-        # Parse chat content
-        messages, detected_format = chat_parser.parse(
+        logger.info(f"Chat import request from user {current_user['user_id']} ({len(request.content):,} chars)")
+
+        if len(request.content) > settings.MAX_CHAT_IMPORT_CHARS:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=(
+                    f"Chat is too long to import ({len(request.content):,} characters). "
+                    f"Please keep it under {settings.MAX_CHAT_IMPORT_CHARS:,} characters, e.g. only recent months."
+                )
+            )
+
+        # Parse chat content (CPU-bound: run in a thread so other requests keep being served)
+        messages, detected_format = await asyncio.to_thread(
+            chat_parser.parse,
             content=request.content,
             format_type=request.format_type
         )
@@ -330,8 +342,9 @@ async def import_and_analyze_chat(
         
         logger.info(f"Parsed {len(messages)} messages, format: {detected_format}")
         
-        # Perform comprehensive analysis
-        analysis = chat_analyzer.analyze_conversation(
+        # Perform comprehensive analysis (CPU-bound, see above)
+        analysis = await asyncio.to_thread(
+            chat_analyzer.analyze_conversation,
             messages=messages,
             current_user_name=request.current_user_name,
             language=request.language,
@@ -388,7 +401,11 @@ async def import_and_analyze_chat(
             logger.warning(f"💡 User should provide 'current_user_name' parameter to save only their messages")
         
         # Process each message and save individual sentiment analyses
-        for msg in messages:
+        for idx, msg in enumerate(messages):
+            # Sentiment scoring is synchronous; yield regularly so other requests aren't starved
+            if idx % 200 == 0:
+                await asyncio.sleep(0)
+
             # ONLY save messages from the current user (when identified)
             # Never save other person's messages to prevent incorrect statistics
             should_save = False

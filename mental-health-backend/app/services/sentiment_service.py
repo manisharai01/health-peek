@@ -19,7 +19,7 @@ Analysis pipeline
 4.  Lexicon fallback when BERT is unavailable
 """
 
-from transformers import pipeline
+import os
 import re
 import emoji
 import logging
@@ -51,6 +51,8 @@ class SentimentAnalysisService:
             return
         try:
             logger.info("Initialising English AI sentiment models…")
+            # Imported lazily so torch/transformers stay out of boot when models are disabled
+            from transformers import pipeline
             loop = asyncio.get_event_loop()
             self.sentiment_analyzer = await loop.run_in_executor(
                 None,
@@ -82,8 +84,13 @@ class SentimentAnalysisService:
         """
         if self._multilingual_initialized:
             return
+        if os.getenv("DISABLE_AI_MODELS", "false").lower() == "true":
+            # ~670 MB model would exceed the free tier's 512 MB; lexicon fallback is used instead
+            self._multilingual_initialized = True
+            return
         try:
             logger.info("Initialising multilingual sentiment model…")
+            from transformers import pipeline
             loop = asyncio.get_event_loop()
             self._multilingual_analyzer = await loop.run_in_executor(
                 None,
